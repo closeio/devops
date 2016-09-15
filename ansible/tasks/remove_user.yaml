@@ -1,0 +1,32 @@
+---
+- hosts: all
+  become: yes
+  become_user: root
+  vars:
+    the_user: "USERTOREMOVE"
+    the_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD8DYClu5yB3XwIp4Yy5Jr7FlOtoxaCwiFI5v0E+/neSYt7XuQywaMnwZ5QDl/0yWdupFl+KC+ParrEv6KZkzxqbTWpkr4qtYd83J8ZKDONw0EQSTxKdh2Rj2aKhAZxRB9tpaGONJZ0DGWhKONBuGfAx7kZRKEjdl4Iwq/Gr7yYjPKBqh6V22DS6WZZ2K/cIPfWLTN1n3x4smegpAk6xDohnDkMSmUIUXTmzxrpwb1cXJoFb7X1XaN2r0ZsAjJ3/WXD5Sss1QcZMHxvlvukCjthE7BlBehKm6zVCDYo9ZMjXHD/9l2TjmTJHaEvEYbXxaqwT9SuoZht5WOVjKpOH7mD"
+    # joe test the_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD8DYClu5yB3XwIp4Yy5Jr7FlOtoxaCwiFI5v0E+/neSYt7XuQywaMnwZ5QDl/0yWdupFl+KC+ParrEv6KZkzxqbTWpkr4qtYd83J8ZKDONw0EQSTxKdh2Rj2aKhAZxRB9tpaGONJZ0DGWhKONBuGfAx7kZRKEjdl4Iwq/Gr7yYjPKBqh6V22DS6WZZ2K/cIPfWLTN1n3x4smegpAk6xDohnDkMSmUIUXTmzxrpwb1cXJoFb7X1XaN2r0ZsAjJ3/WXD5Sss1QcZMHxvlvukCjthE7BlBehKm6zVCDYo9ZMjXHD/9l2TjmTJHaEvEYbXxaqwT9SuoZht5WOVjKpOH7mD"
+  tasks:
+    - command: puppet agent --disable "Fixing secrets"
+
+    - name: Remove SSH
+      authorized_key:
+        user: ubuntu
+        key: "{{ the_key }}"
+        state: absent
+
+    - shell: pkill -u {{ the_user }} || true
+    - pause: seconds=1
+    - shell: pkill -9 -u {{ the_user }} || true
+
+    - name: Remove user
+      user:
+        name: "{{ the_user }}"
+        state: absent
+
+    # Use this task to test everything during prep of final run
+    - name: Test task
+      stat:
+        path: /home/{{ the_user }}
+      register: st
+    - debug: msg="{{ st.stat.exists }}"
