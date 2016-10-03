@@ -1,0 +1,21 @@
+#!/usr/bin/python
+
+import json
+import os
+import sys
+
+
+js = ''.join(sys.stdin.readlines())
+print js
+j = json.loads(js)
+
+
+with open(os.path.expanduser('~/.aws/credentials'),'w+') as cred_file:
+    cred_file.write("[default]\n")
+    cred_file.write("aws_secret_access_key=%s\n" % j['Credentials']['SecretAccessKey'])
+    cred_file.write("aws_access_key_id=%s\n" % j['Credentials']['AccessKeyId'])
+    cred_file.write("aws_security_token=%s\n" % j['Credentials']['SessionToken'])
+    cred_file.write("aws_session_token=%s\n" % j['Credentials']['SessionToken'])
+    cred_file.write("\n\n")
+    with open(os.path.expanduser('~/.aws/credentials.template'),'r') as tcred_file:
+        cred_file.write(''.join(tcred_file.readlines()))
