@@ -1,21 +1,34 @@
 #!/usr/bin/python
+"""AWS credential helper."""
+
+# Script can be used to write AWS credentials to your credentials file.  Use it like this:
+# aws sts get-session-token --duration-seconds 28800 --serial-number "arn:aws:iam::[MFA SERIAL NUMBER]" --token-code "[MFA CODE]" | credparse
+# or
+# aws sts assume-role --profile [PROFILE NAME] --role-session-name "Temp Role" --role-arn "arn:aws:iam::[ROLE ARN]" --serial-number "arn:aws:iam::[MFA SERIAL NUMBER]" --token-code "[MFA CODE]" | credparse
+#
+# You also need to create a ~/.aws/credentials.template that will be stuck at the end of the file created by this script
+
 
 import json
 import os
 import sys
 
-
 js = ''.join(sys.stdin.readlines())
 print js
 j = json.loads(js)
 
-
-with open(os.path.expanduser('~/.aws/credentials'),'w+') as cred_file:
+with open(os.path.expanduser('~/.aws/credentials'), 'w+') as cred_file:
     cred_file.write("[default]\n")
     cred_file.write("aws_secret_access_key=%s\n" % j['Credentials']['SecretAccessKey'])
     cred_file.write("aws_access_key_id=%s\n" % j['Credentials']['AccessKeyId'])
     cred_file.write("aws_security_token=%s\n" % j['Credentials']['SessionToken'])
     cred_file.write("aws_session_token=%s\n" % j['Credentials']['SessionToken'])
     cred_file.write("\n\n")
-    with open(os.path.expanduser('~/.aws/credentials.template'),'r') as tcred_file:
+    with open(os.path.expanduser('~/.aws/credentials.template'), 'r') as tcred_file:
         cred_file.write(''.join(tcred_file.readlines()))
+
+print
+print 'export AWS_ACCESS_KEY_ID="%s"' % j['Credentials']['AccessKeyId']
+print 'export AWS_SECRET_ACCESS_KEY="%s"' % j['Credentials']['SecretAccessKey']
+print 'export AWS_SESSION_TOKEN="%s"' % j['Credentials']['SessionToken']
+print 'export AWS_SECURITY_TOKEN="%s"' % j['Credentials']['SessionToken']
