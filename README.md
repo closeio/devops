@@ -1,3 +1,3 @@
 # DevOps
 
-Miscellaneous scripts and support tools
+Miscellaneous scripts and tools used at [Close.io](http://close.io).

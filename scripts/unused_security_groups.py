@@ -1,3 +1,5 @@
+"""Find AWS security groups not assigned to instances or ELBs."""
+
 import boto3
 
 client = boto3.client('ec2')
