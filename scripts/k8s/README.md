@@ -11,7 +11,7 @@ to have it meet your needs.  It uses [kops](https://github.com/kubernetes/kops),
 after creating it with `manage_cluster.py`.  Make manual/scripted changes or create a new cluster.
 * Provide a process friendly to staff not familiar with k8s/kops to fully provision a cluster.  There are a number of checks to protect damage to running infrastructure.  These may get in the way.  Comment them out if you don't need them.
 * Create the k8s cluster in private subnets but use public subnets to allow Internet facing ELBs to access services in the cluster.
-The result will look something like [this](k8s-priv-pub-network.png).
+The result will look something like [this](K8s-priv-pub-network.png).
 * Manage security groups for instance groups.
 
 
