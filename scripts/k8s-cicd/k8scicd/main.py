@@ -246,6 +246,8 @@ class CICDProcessor(object):
         if 'KUBE_CONFIG' not in self.variables:
             self.variables['KUBE_CONFIG'] = os.path.realpath(os.path.expanduser('~/.kube/config'))
             logging.info('Set kube config to:%s', self.variables['KUBE_CONFIG'])
+        else:
+            self.variables['KUBE_CONFIG'] = os.path.realpath(os.path.expanduser(self.variables['KUBE_CONFIG']))
 
         for phase in self.phases:
             logging.info('Running phase:%s', phase)
