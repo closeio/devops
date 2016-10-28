@@ -17,6 +17,7 @@ import yaml
 from deploy import k8s_deploy_from_file, k8s_deploy_from_manifest
 from ecr_cleaner import prune_ecr
 
+
 def init():
     """Initialize system."""
 
@@ -40,7 +41,7 @@ class CICDProcessor(object):
         self.variables = None
 
     @staticmethod
-    def _run_process(args, ignore_error=False):
+    def _run_process(args, ignore_error=False, timeout=360):
         """Runs a OS process and waits for it to exit"""
 
         args = [str(a) for a in args]
@@ -48,10 +49,12 @@ class CICDProcessor(object):
         logging.info("Running process:")
         logging.info(' ' .join(args))
         process = subprocess.Popen(args, close_fds=True)
-        while process.returncode is None:   # TODO: Add timeout
+        start_time = datetime.datetime.now()
+        while process.returncode is None:
             time.sleep(.5)
             process.poll()
-
+            if (datetime.datetime.now() - start_time).total_seconds() > timeout:
+                raise ProcessingError('Timeout running command')
         if not ignore_error and process.returncode != 0:
             logging.error('Non-zero return code %d', process.returncode)
             raise ProcessingError('Process returned non-zero')
@@ -120,9 +123,7 @@ class CICDProcessor(object):
         args = []
         if 'args' in settings:
             args = list(settings['args'])
-        args = [
-                 name
-                ] + args
+        args = [name] + args
 
         self._run_process(args)
         os.chdir(cwd)
@@ -139,10 +140,7 @@ class CICDProcessor(object):
         args = []
         if 'args' in settings:
             args = list(settings['args'])
-        args = [
-                '/bin/sh',
-                service_directory + '/' + name
-                ] + args
+        args = ['/bin/sh', service_directory + '/' + name] + args
 
         self._run_process(args)
         os.chdir(cwd)
@@ -171,7 +169,6 @@ class CICDProcessor(object):
     def command_prune_ecr(self, service_directory, settings):
 
         prune_ecr(settings['region'], str(settings['account']), settings['name'], settings['days'], settings['min_num'])
-
 
     def parse_args(self):
         """Parse command line arguments"""

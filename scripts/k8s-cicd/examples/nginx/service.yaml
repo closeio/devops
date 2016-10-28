@@ -1,0 +1,69 @@
+
+build:
+  - docker:
+      args:
+        - build
+        - -f
+        - Dockerfile.nginx
+        - -t
+        - {{ aws_ecr }}/nginx:{{ VERSION }}
+        - .
+
+test:
+  - docker:
+      ignore_error: true
+      args:
+        - rm
+        - nginxtest
+  - docker:
+      args:
+        - run
+        - --name
+        - nginxtest
+        - -d
+        - -v
+        - {{ SERVICE_DIRECTORY }}/config:/etc/prometheuscircle
+        - -p
+        - 9091:80
+        - {{ aws_ecr }}/nginx:{{ VERSION }}
+  - script:
+     name: test_nginx.sh
+  - docker:
+      args:
+        - stop
+        - nginxtest
+push:
+  - ecr_login: https://{{ aws_ecr }}
+  - docker:
+      args:
+        - push
+        - {{ aws_ecr }}/nginx:{{VERSION}}
+
+deploy:
+  - k8s_config_map:
+      name: nginx-config
+      namespace: default
+      data:
+        - file:
+            key: test-conf
+            name: test.conf
+        - value:
+            key: test-val
+            data: "This is a test value"
+        - value:
+            key: test-val2
+            data: "This is a test value2"
+
+  - k8s_deploy:
+      manifest: nginx-deployment.yaml
+
+  - k8s_deploy:
+      manifest: nginx-service.yaml
+
+clean:
+  - prune_ecr:
+      name: nginx
+      days: 30
+      min_num: 10
+      account: {{ aws_account }}
+      region: us-west-2

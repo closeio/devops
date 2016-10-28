@@ -68,20 +68,7 @@ metadata:
 
 
 def deploy_config_map(api, manifest, version, timeout):
-    """Sends service to k8s cluster.
-
-    First checks to see if deployment exists in cluster.  If it does not the deployment is created otherise
-    the deployment is updated.
-
-    Args:
-        api: Pykube api instance
-        file_name: A filename string for the yaml template
-        version: Version string will be used as the jinja version variable
-        tag: Image tag string will be used as a jinga imagetag variable
-
-    Returns:
-        Pykube deployment instance
-    """
+    """Deploy Config Map."""
 
     logging.info("Deploying")
 
@@ -103,20 +90,7 @@ def deploy_config_map(api, manifest, version, timeout):
 
 
 def deploy_daemon_set(api, manifest, version):
-    """Sends service to k8s cluster.
-
-    First checks to see if deployment exists in cluster.  If it does not the deployment is created otherise
-    the deployment is updated.
-
-    Args:
-        api: Pykube api instance
-        file_name: A filename string for the yaml template
-        version: Version string will be used as the jinja version variable
-        tag: Image tag string will be used as a jinga imagetag variable
-
-    Returns:
-        Pykube deployment instance
-    """
+    """Deploy Daemon Set."""
 
     logging.info("Deploying")
 
@@ -138,20 +112,7 @@ def deploy_daemon_set(api, manifest, version):
 
 
 def deploy_deployment(api, manifest, version, timeout):
-    """Sends deployment to k8s cluster.
-
-    First checks to see if deployment exists in cluster.  If it does not the deployment is created otherise
-    the deployment is updated.
-
-    Args:
-        api: Pykube api instance
-        file_name: A filename string for the yaml template
-        version: Version string will be used as the jinja version variable
-        tag: Image tag string will be used as a jinga imagetag variable
-
-    Returns:
-        Pykube deployment instance
-    """
+    """Deploy Deployment."""
 
     logging.info("Deploying")
 
@@ -183,20 +144,7 @@ def deploy_deployment(api, manifest, version, timeout):
     return deployment
 
 def deploy_service(api, manifest, version, timeout):
-    """Sends service to k8s cluster.
-
-    First checks to see if deployment exists in cluster.  If it does not the deployment is created otherise
-    the deployment is updated.
-
-    Args:
-        api: Pykube api instance
-        file_name: A filename string for the yaml template
-        version: Version string will be used as the jinja version variable
-        tag: Image tag string will be used as a jinga imagetag variable
-
-    Returns:
-        Pykube deployment instance
-    """
+    """Deploy Service."""
 
     logging.info("Deploying")
 
@@ -218,20 +166,7 @@ def deploy_service(api, manifest, version, timeout):
 
 
 def deploy_service_account(api, manifest, version):
-    """Sends service to k8s cluster.
-
-    First checks to see if deployment exists in cluster.  If it does not the deployment is created otherise
-    the deployment is updated.
-
-    Args:
-        api: Pykube api instance
-        file_name: A filename string for the yaml template
-        version: Version string will be used as the jinja version variable
-        tag: Image tag string will be used as a jinga imagetag variable
-
-    Returns:
-        Pykube deployment instance
-    """
+    """Deploy Service Account."""
 
     logging.info("Deploying")
 
@@ -330,6 +265,8 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
                 if current_revision != our_revision:
                     logging.info("Looks like our deployment got bumped ours: %s current: %s", \
                                  our_revision, current_revision)
+
+                # All checks passed so deployment looks successful
                 return current_revision
 
         except Exception:  #pylint: disable=w0703
@@ -341,7 +278,7 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
 
 
 def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, timeout=240):
-    """Deploy to cluster"""
+    """Deploy to cluster from a manifest file"""
 
     logging.info('Loading manifest')
 
@@ -350,7 +287,7 @@ def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, tim
 
 
 def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240):
-    """Deploy to cluster"""
+    """Deploy to cluster using provided manifest"""
 
     start_deployment = time.time()
 

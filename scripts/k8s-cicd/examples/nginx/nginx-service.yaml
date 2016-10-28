@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-internal: 0.0.0.0/0
+  labels:
+    app: nginx-test
+  name: nginx-test
+spec:
+  ports:
+  - name: nginx-test
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-test
+  type: LoadBalancer
