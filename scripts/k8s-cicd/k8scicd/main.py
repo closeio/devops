@@ -42,7 +42,7 @@ class CICDProcessor(object):
         self.process_subdirs = False
 
     @staticmethod
-    def _run_process(args, ignore_error=False, timeout=360, shell=False):
+    def _run_process(args, ignore_error=False, timeout=240, shell=False):
         """Runs a OS process and waits for it to exit"""
 
         args = [str(a) for a in args]
@@ -80,7 +80,7 @@ class CICDProcessor(object):
         else:
             ignore_error = False
 
-        self._run_process(args, ignore_error, shell=True)
+        self._run_process(args, ignore_error, shell=True, timeout=self.get_command_timeout(settings))
         os.chdir(cwd)
 
     def command_k8s_config_map(self, service_directory, settings):
@@ -107,13 +107,14 @@ class CICDProcessor(object):
             else:
                 raise ProcessingError('Unknown config map data type')
 
-        k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], manifest, self.variables['VERSION'])
+        k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], manifest, self.variables['VERSION'],
+                                 timeout=self.get_command_timeout(settings))
 
     def command_k8s_deploy(self, service_directory, settings):
         """Deploy to k8s."""
 
         k8s_deploy_from_file(self.variables['KUBE_CONFIG'], settings['manifest'], self.variables['VERSION'],
-                             self.variables)
+                             self.variables, timeout=self.get_command_timeout(settings))
 
     def command_run(self, service_directory, settings):
         """Run bash script."""
@@ -129,7 +130,7 @@ class CICDProcessor(object):
             args = list(settings['args'])
         args = [name] + args
 
-        self._run_process(args)
+        self._run_process(args, timeout=self.get_command_timeout(settings))
         os.chdir(cwd)
 
     def command_script(self, service_directory, settings):
@@ -146,7 +147,7 @@ class CICDProcessor(object):
             args = list(settings['args'])
         args = ['/bin/bash', service_directory + '/' + name] + args
 
-        self._run_process(args)
+        self._run_process(args, timeout=self.get_command_timeout(settings))
         os.chdir(cwd)
 
     def command_ecr_login(self, service_directory, repo):
@@ -178,6 +179,14 @@ class CICDProcessor(object):
     def command_prune_ecr(self, service_directory, settings):
 
         prune_ecr(settings['region'], str(settings['account']), settings['name'], settings['days'], settings['min_num'])
+
+    def get_command_timeout(self, settings):
+        """Get timeout in config sections."""
+
+        if 'timeout' in settings:
+            return settings['timeout']
+        else:
+            return 240
 
     def get_service_files(self):
         """Return ordered list of service files."""

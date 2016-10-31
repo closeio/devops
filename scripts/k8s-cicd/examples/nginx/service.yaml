@@ -19,6 +19,7 @@ phases:         # CICD phases.  Define whatever phases needed and specify with -
           - rm
           - nginxtest
     - docker:
+        timeout: 360              # Increase default timeout for command
         args:
           - run
           - --name
