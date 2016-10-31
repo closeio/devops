@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations: {}
+  labels:
+    app: nginx-test
+    version: '{{VERSION}}'
+  name: nginx-test
+  namespace: default
+spec:
+  minReadySeconds: 2
+  replicas: 2
+  revisionHistoryLimit: 4
+  selector:
+    matchLabels:
+      app: nginx-test
+  strategy:
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: nginx-test
+        version: '{{VERSION}}'
+    spec:
+      nodeSelector:
+        close.io/ig: services
+      containers:
+      - args: []
+        image: {{ aws_ecr }}/nginx:{{ VERSION }}
+        name: nginx
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 10m
