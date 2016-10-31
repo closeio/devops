@@ -21,7 +21,7 @@ Example
 
 The `service.yaml` file in the `examples/nginx` directory includes all supported command types (e.g. docker, script, etc).  
 You could use the following command to run through all phases defined in the service file:
-`./k8scicd.sh -p build,test,push,deploy,clean -d examples/ -v aws_ecr=111111111111.dkr.ecr.us-west-1.amazonaws.com -v aws_account=111111111111`
+`./k8scicd.sh -p build,test,push,deploy,clean -d examples/ -s -v aws_ecr=111111111111.dkr.ecr.us-west-1.amazonaws.com -v aws_account=111111111111`
 
 Note:
 
