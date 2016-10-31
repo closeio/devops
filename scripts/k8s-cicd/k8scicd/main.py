@@ -49,6 +49,7 @@ class CICDProcessor(object):
         logging.info("Running process:")
         logging.info(' ' .join(args))
         if shell:
+            logging.info('Via shell')
             args = ' '.join(args)
         process = subprocess.Popen(args, close_fds=True, shell=shell)
         start_time = datetime.datetime.now()
@@ -220,10 +221,9 @@ class CICDProcessor(object):
 
         parser = argparse.ArgumentParser()
 
-        # Global parameters
-        parser.add_argument('-p', '--phase', help='Phase to run in deploy file', required=True)
+        parser.add_argument('-p', '--phase', help='Phases to run in deploy file.  Comma separated.', required=True)
         parser.add_argument('-d', '--dir', help='Directory to scan for deploy files', required=True)
-        parser.add_argument('-f', '--filename', help='Deployment file name (default: deploy.yaml)',
+        parser.add_argument('-f', '--filename', help='Deployment file name (default: service.yaml)',
                             default='service.yaml', required=False)
 
         parser.add_argument('-v', '--variable', required=False, action='append',
