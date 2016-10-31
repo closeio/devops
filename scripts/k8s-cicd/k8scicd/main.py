@@ -41,14 +41,16 @@ class CICDProcessor(object):
         self.variables = None
 
     @staticmethod
-    def _run_process(args, ignore_error=False, timeout=360):
+    def _run_process(args, ignore_error=False, timeout=360, shell=False):
         """Runs a OS process and waits for it to exit"""
 
         args = [str(a) for a in args]
 
         logging.info("Running process:")
         logging.info(' ' .join(args))
-        process = subprocess.Popen(args, close_fds=True)
+        if shell:
+            args = ' '.join(args)
+        process = subprocess.Popen(args, close_fds=True, shell=shell)
         start_time = datetime.datetime.now()
         while process.returncode is None:
             time.sleep(.5)
@@ -76,7 +78,7 @@ class CICDProcessor(object):
         else:
             ignore_error = False
 
-        self._run_process(args, ignore_error)
+        self._run_process(args, ignore_error, shell=True)
         os.chdir(cwd)
 
     def command_k8s_config_map(self, service_directory, settings):
@@ -94,7 +96,7 @@ class CICDProcessor(object):
         manifest = yaml.load(manifest)
 
         for i in range(0, len(settings['data'])):
-            value = settings['data'][i].keys()[0]
+            value = list(settings['data'][i].keys())[0]
             if value == 'file':
                 with open(settings['data'][i][value]['name']) as config_file:
                     manifest['data'][settings['data'][i][value]['key']] = config_file.read()
@@ -119,7 +121,7 @@ class CICDProcessor(object):
         cwd = os.getcwd()
         os.chdir(service_directory)
 
-        name = settings['name']
+        name = settings['command']
         args = []
         if 'args' in settings:
             args = list(settings['args'])
@@ -140,7 +142,7 @@ class CICDProcessor(object):
         args = []
         if 'args' in settings:
             args = list(settings['args'])
-        args = ['/bin/sh', service_directory + '/' + name] + args
+        args = ['/bin/bash', service_directory + '/' + name] + args
 
         self._run_process(args)
         os.chdir(cwd)
@@ -152,6 +154,11 @@ class CICDProcessor(object):
         ecr_token = response['authorizationData'][0]['authorizationToken']
 
         ecr_token = base64.b64decode(ecr_token)
+
+        # Python 3
+        if type(ecr_token) == bytes:
+            ecr_token = ecr_token.decode('utf-8')
+
         ecr_token = ecr_token.split(':')
 
         args = {'args': ['login',
@@ -169,6 +176,44 @@ class CICDProcessor(object):
     def command_prune_ecr(self, service_directory, settings):
 
         prune_ecr(settings['region'], str(settings['account']), settings['name'], settings['days'], settings['min_num'])
+
+    def get_service_files(self):
+        """Return ordered list of service files."""
+
+        dir_list = os.listdir(self.directory)
+
+        service_files = []
+
+        # Look in each subdirectory for a services yaml file
+        for f in dir_list:
+            service_directory = self.directory + '/' + f
+            if os.path.isdir(service_directory):
+                deploy_file = service_directory + '/' + self.filename
+                if os.path.isfile(deploy_file):
+                    service_files.append((deploy_file, self.get_service_order(deploy_file)))
+
+        # Sort service files based on order number
+        service_files = sorted(service_files, key=lambda tup: tup[1])
+        service_files = [tup[0] for tup in service_files]
+        logging.info('Processing the following service files:')
+        for service_file in service_files:
+            logging.info('   %s', service_file)
+
+        return service_files
+
+    def get_service_order(self, service_file):
+        """Get priority our of service file."""
+
+        self.set_service_variable_defaults(service_file)
+        with open(service_file, 'r') as config_file:
+            config_yaml = self.render_config(config_file.read())
+
+        if 'config' in config_yaml and 'order' in config_yaml['config']:
+            order = config_yaml['config']['order']
+        else:
+            order = 100
+
+        return order
 
     def parse_args(self):
         """Parse command line arguments"""
@@ -198,28 +243,23 @@ class CICDProcessor(object):
                 values = variable.split('=')
                 self.variables[values[0]] = values[1]
 
-    def process_directories(self, phase):
+    def process_services(self, phase):
         """Process directory for deploy files."""
 
         logging.info('Processing directory: %s', self.directory)
 
+        # If a service file exists in the diretory we just run that one
         if os.path.isfile(self.directory + '/' + self.filename):
             logging.info('Processing single directory')
             self.run_cicd_phase(phase, self.directory + '/' + self.filename)
         else:
+            # Look for subdirectories with service files
             logging.info('Processing subdirectories')
-            dir_list = os.listdir(self.directory)
 
-            # We handle dependencies by sorting directories
-            dir_list.sort()
+            service_files = self.get_service_files()
 
-            # Look in each subdirectory for a services yaml file
-            for f in dir_list:
-                service_directory = self.directory + '/' + f
-                if os.path.isdir(service_directory):
-                    deploy_file = service_directory + '/' + self.filename
-                    if os.path.isfile(deploy_file):
-                        self.run_cicd_phase(phase, deploy_file)
+            for service_file in service_files:
+                self.run_cicd_phase(phase, service_file)
 
     def render_config(self, config):
         """Render service config using jinja."""
@@ -248,7 +288,7 @@ class CICDProcessor(object):
 
         for phase in self.phases:
             logging.info('Running phase:%s', phase)
-            self.process_directories(phase)
+            self.process_services(phase)
 
         logging.info('Done version:%s', self.variables['VERSION'])
 
@@ -257,24 +297,23 @@ class CICDProcessor(object):
 
         logging.info('Run phase:%s in file:%s', phase, deploy_file)
 
-        service_directory = os.path.dirname(os.path.realpath(os.path.expanduser(deploy_file)))
-        self.variables['SERVICE_DIRECTORY'] = service_directory
+        service_directory = self.set_service_variable_defaults(deploy_file)
 
         cwd = os.getcwd()
         os.chdir(service_directory)
         with open(deploy_file, 'r') as config_file:
             config_yaml = self.render_config(config_file.read())
 
-        if phase not in config_yaml:
-            logging.info('Phase not in cicd file')
+        if phase not in config_yaml['phases']:
+            logging.debug('Phase not in cicd file')
             return
 
-        if type(config_yaml[phase]) != list:
+        if type(config_yaml['phases'][phase]) != list:
             logging.error('Must be list of commands so we can ensure order.')
             raise ProcessingError('Must be list')
 
-        for i in range(0, len(config_yaml[phase])):
-            self.run_command(service_directory, config_yaml[phase][i])
+        for i in range(0, len(config_yaml['phases'][phase])):
+            self.run_command(service_directory, config_yaml['phases'][phase][i])
 
         os.chdir(cwd)
 
@@ -285,7 +324,7 @@ class CICDProcessor(object):
             command = command_section
             section = None
         else:
-            command = command_section.keys()[0]
+            command = list(command_section.keys())[0]
             section = command_section[command]
 
         logging.info('Running command %s', command)
@@ -307,6 +346,14 @@ class CICDProcessor(object):
         else:
             logging.error('Unknown command:%s', command)
             raise ProcessingError('Unknown command %s', command)
+
+    def set_service_variable_defaults(self, deploy_file):
+        """Set service variable defaults."""
+
+        service_directory = os.path.dirname(os.path.realpath(os.path.expanduser(deploy_file)))
+        self.variables['SERVICE_DIRECTORY'] = service_directory
+
+        return service_directory
 
 
 class ProcessingError(Exception):

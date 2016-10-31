@@ -1,69 +1,74 @@
+config:
+  order: 150    # Optional ordering priority.  Defaults to 100, lowest numbers go first
 
-build:
-  - docker:
-      args:
-        - build
-        - -f
-        - Dockerfile.nginx
-        - -t
-        - {{ aws_ecr }}/nginx:{{ VERSION }}
-        - .
+phases:         # CICD phases.  Define whatever phases needed and specify with -p argument
+  build:
+    - docker:   # Starts docker binary with the specified arguments.  Goes through shell so you can use env variables.
+        args:
+          - build
+          - -f
+          - Dockerfile.nginx
+          - -t
+          - {{ aws_ecr }}/nginx:{{ VERSION }}
+          - .
 
-test:
-  - docker:
-      ignore_error: true
-      args:
-        - rm
-        - nginxtest
-  - docker:
-      args:
-        - run
-        - --name
-        - nginxtest
-        - -d
-        - -v
-        - {{ SERVICE_DIRECTORY }}/config:/etc/prometheuscircle
-        - -p
-        - 9091:80
-        - {{ aws_ecr }}/nginx:{{ VERSION }}
-  - script:
-     name: test_nginx.sh
-  - docker:
-      args:
-        - stop
-        - nginxtest
-push:
-  - ecr_login: https://{{ aws_ecr }}
-  - docker:
-      args:
-        - push
-        - {{ aws_ecr }}/nginx:{{VERSION}}
+  test:
+    - docker:
+        ignore_error: true        # Ignores the exit code of the docker process
+        args:
+          - rm
+          - nginxtest
+    - docker:
+        args:
+          - run
+          - --name
+          - nginxtest
+          - -d
+          - -v
+          - {{ SERVICE_DIRECTORY }}/config:/etc/prometheuscircle  # SERVICE_DIRECORY set internally by script
+          - -p
+          - 9091:80
+          - {{ aws_ecr }}/nginx:{{ VERSION }}                     # VERSION passed as argument variable or set internally
+    - script:                     # Runs file through /bin/bash
+       name: test_nginx.sh
+    - run:
+        command: ls
+        args:
+          - .
+    - docker:
+        args:
+          - stop
+          - nginxtest
 
-deploy:
-  - k8s_config_map:
-      name: nginx-config
-      namespace: default
-      data:
-        - file:
-            key: test-conf
-            name: test.conf
-        - value:
-            key: test-val
-            data: "This is a test value"
-        - value:
-            key: test-val2
-            data: "This is a test value2"
+  push:
+    - ecr_login: https://{{ aws_ecr }}
+    - docker:
+        args:
+          - push
+          - {{ aws_ecr }}/nginx:{{VERSION}}
 
-  - k8s_deploy:
-      manifest: nginx-deployment.yaml
+  deploy:
+    - k8s_config_map:                     # Create/update config map
+        name: nginx-config
+        namespace: default
+        data:
+          - file:                         # Use file for config map data
+              key: test-conf
+              name: test.conf
+          - value:                        # Use string for config map data
+              key: test-val
+              data: "This is a test value"
 
-  - k8s_deploy:
-      manifest: nginx-service.yaml
+    - k8s_deploy:                         # Deploy supported k8s manifests
+        manifest: nginx-deployment.yaml
 
-clean:
-  - prune_ecr:
-      name: nginx
-      days: 30
-      min_num: 10
-      account: {{ aws_account }}
-      region: us-west-2
+    - k8s_deploy:
+        manifest: nginx-service.yaml
+
+  clean:
+    - prune_ecr:                          # Run ecr pruning script to delete old images
+        name: nginx
+        days: 30
+        min_num: 10
+        account: {{ aws_account }}        # Script will fail if jinja2 variables are not provided with -v argument
+        region: us-west-2
