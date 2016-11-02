@@ -83,6 +83,38 @@ class CICDProcessor(object):
         self._run_process(args, ignore_error, shell=True, timeout=self.get_command_timeout(settings))
         os.chdir(cwd)
 
+    def command_ecr_login(self, service_directory, settings):
+
+        if 'region' in settings:
+            region = settings['region']
+        else:
+            region = 'us-west-2'
+
+        client = boto3.client('ecr', region_name=region)
+
+        response = client.get_authorization_token()
+        ecr_token = response['authorizationData'][0]['authorizationToken']
+
+        ecr_token = base64.b64decode(ecr_token)
+
+        # Python 3
+        if type(ecr_token) == bytes:
+            ecr_token = ecr_token.decode('utf-8')
+
+        ecr_token = ecr_token.split(':')
+
+        args = {'args': ['login',
+                         '-u',
+                         ecr_token[0],
+                         '-p',
+                         ecr_token[1],
+                         '-e',
+                         'none',
+                         settings['name']
+                         ]}
+
+        self.command_docker(service_directory, args)
+
     def command_k8s_config_map(self, service_directory, settings):
         """Deploy to k8s."""
 
@@ -149,32 +181,6 @@ class CICDProcessor(object):
 
         self._run_process(args, timeout=self.get_command_timeout(settings))
         os.chdir(cwd)
-
-    def command_ecr_login(self, service_directory, repo):
-        client = boto3.client('ecr')
-
-        response = client.get_authorization_token()
-        ecr_token = response['authorizationData'][0]['authorizationToken']
-
-        ecr_token = base64.b64decode(ecr_token)
-
-        # Python 3
-        if type(ecr_token) == bytes:
-            ecr_token = ecr_token.decode('utf-8')
-
-        ecr_token = ecr_token.split(':')
-
-        args = {'args': ['login',
-                         '-u',
-                         ecr_token[0],
-                         '-p',
-                         ecr_token[1],
-                         '-e',
-                         'none',
-                         repo
-                         ]}
-
-        self.command_docker(service_directory, args)
 
     def command_prune_ecr(self, service_directory, settings):
 
