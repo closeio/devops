@@ -139,14 +139,24 @@ class CICDProcessor(object):
             else:
                 raise ProcessingError('Unknown config map data type')
 
+        if 'update' in settings:
+            update = settings['update']
+        else:
+            update = True
+
         k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], manifest, self.variables['VERSION'],
-                                 timeout=self.get_command_timeout(settings))
+                                 timeout=self.get_command_timeout(settings), update=update)
 
     def command_k8s_deploy(self, service_directory, settings):
         """Deploy to k8s."""
 
+        if 'update' in settings:
+            update = settings['update']
+        else:
+            update = True
+
         k8s_deploy_from_file(self.variables['KUBE_CONFIG'], settings['manifest'], self.variables['VERSION'],
-                             self.variables, timeout=self.get_command_timeout(settings))
+                             self.variables, timeout=self.get_command_timeout(settings), update=update)
 
     def command_run(self, service_directory, settings):
         """Run bash script."""
