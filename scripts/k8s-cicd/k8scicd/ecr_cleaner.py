@@ -8,6 +8,7 @@ import sys
 
 import boto3
 
+
 def init():
     """Initialize system."""
 
@@ -18,6 +19,7 @@ def init():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
+
 
 def get_images(ecr_client, token, registry_id, repository_name):
     """Retries a batch of images from ECR.
@@ -44,6 +46,7 @@ def get_images(ecr_client, token, registry_id, repository_name):
         token = response['nextToken']
 
     return list(response['imageIds']), token
+
 
 def delete_old_images(ecr_client, images, registry_id, repository_name):
     """Deletes an image from ECR.
@@ -129,12 +132,13 @@ def find_old_images(ecr_client, registry_id, repository_name, min_num, max_age):
         if len(sorted_images) - len(old_images) + 1 <= min_num:
             logging.info("Need to stop to stay above min_num")
             break
-        age = (datetime.datetime.utcnow() - image[2]).total_seconds()/60.0/60.0/24.0
+        age = (datetime.datetime.utcnow() - image[2]).total_seconds() / 60.0 / 60.0 / 24.0
         if age > max_age:
             logging.debug('Old image %s', image)
             old_images.append(image)
     logging.info("Found %d old images", len(old_images))
     return old_images
+
 
 def prune_ecr(region, account, repo_name, days, min_num):
     """Prune images out of ecr repository."""
@@ -144,6 +148,7 @@ def prune_ecr(region, account, repo_name, days, min_num):
     old_ecr_images = find_old_images(client, account, repo_name, min_num, days)
     delete_old_images(client, old_ecr_images, account, repo_name)
 
+
 def doit():
     """Run this thing."""
 
@@ -152,7 +157,7 @@ def doit():
     parser.add_argument('-d', '--days', help='Maximum days old Default: 14', type=int, default=14)
     parser.add_argument('-m', '--min', help='Minimum number to keep Default 10', type=int, default=10)
     parser.add_argument('-a', '--account', help='AWS Account Number', required=True)
-    parser.add_argument('-n', '--reponame', help='Repo name, make sure you are connected to right region', \
+    parser.add_argument('-n', '--reponame', help='Repo name, make sure you are connected to right region',
                         required=True)
     parser.add_argument('-r', '--region', help='AWS Region', default=None)
     args = parser.parse_args()
@@ -164,6 +169,6 @@ def doit():
 if __name__ == "__main__":
     try:
         doit()
-    except Exception as exception:  #pylint: disable=w0703
+    except Exception as exception:  # pylint: disable=w0703
         logging.error("Error:", exc_info=True)
         sys.exit(1)

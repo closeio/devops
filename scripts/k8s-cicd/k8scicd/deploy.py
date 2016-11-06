@@ -10,6 +10,7 @@ import yaml
 import jinja2
 import pykube
 
+
 def init():
     """Initialize system."""
 
@@ -20,6 +21,7 @@ def init():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     root_logger.addHandler(handler)
+
 
 def render_k8s_resource(file_name, variables):
     """Render k8s resource files using jinga2.
@@ -41,6 +43,7 @@ def render_k8s_resource(file_name, variables):
     deploy_string = deploy_template.render(variables)
 
     return yaml.load(deploy_string)
+
 
 def check_namespace(api, name):
     """Create namespace if it doesn't exist."""
@@ -67,7 +70,7 @@ metadata:
     namespace.create()
 
 
-def deploy_config_map(api, manifest, version, timeout):
+def deploy_config_map(api, manifest, version, timeout, update):
     """Deploy Config Map."""
 
     logging.info("Deploying")
@@ -82,14 +85,16 @@ def deploy_config_map(api, manifest, version, timeout):
     if not configmap.exists():
         logging.info("Creating ConfigMap")
         configmap.create()
-    else:
+    elif update:
         logging.info("Updating ConfigMap")
         configmap.update()
+    else:
+        logging.info('Not updating ConfigMap')
 
     return configmap
 
 
-def deploy_daemon_set(api, manifest, version):
+def deploy_daemon_set(api, manifest, version, update):
     """Deploy Daemon Set."""
 
     logging.info("Deploying")
@@ -102,16 +107,18 @@ def deploy_daemon_set(api, manifest, version):
         check_namespace(api, daemon_set.obj['metadata']['namespace'])
 
     if not daemon_set.exists():
-        logging.info("Creating service")
+        logging.info("Creating DaemonSet")
         daemon_set.create()
-    else:
-        logging.info("Updating service")
+    elif update:
+        logging.info("Updating DaemonSet")
         daemon_set.update()
+    else:
+        logging.info('Not updating DaemonSet')
 
     return daemon_set
 
 
-def deploy_deployment(api, manifest, version, timeout):
+def deploy_deployment(api, manifest, version, timeout, update):
     """Deploy Deployment."""
 
     logging.info("Deploying")
@@ -124,12 +131,16 @@ def deploy_deployment(api, manifest, version, timeout):
         check_namespace(api, deployment.obj['metadata']['namespace'])
 
     if not deployment.exists():
-        logging.info("Creating deployment")
+        logging.info('Creating deployment')
         deployment.create()
-    else:
-        logging.info("Updating deployment")
+    elif update:
+        logging.info('Updating deployment')
         deployment.update()
+    else:
+        logging.info('Not updating deployment')
+        return
 
+    # We wait for deployments finish
     app_label = deployment.obj['metadata']['labels']['app']
 
     if 'metadata' in deployment.obj and 'namespace' in deployment.obj['metadata']:
@@ -143,7 +154,8 @@ def deploy_deployment(api, manifest, version, timeout):
 
     return deployment
 
-def deploy_service(api, manifest, version, timeout):
+
+def deploy_service(api, manifest, version, timeout, update):
     """Deploy Service."""
 
     logging.info("Deploying")
@@ -156,16 +168,18 @@ def deploy_service(api, manifest, version, timeout):
         check_namespace(api, service.obj['metadata']['namespace'])
 
     if not service.exists():
-        logging.info("Creating service")
+        logging.info("Creating Service")
         service.create()
-    else:
-        logging.info("Updating service")
+    elif update:
+        logging.info("Updating Service")
         service.update()
+    else:
+        logging.info('Not updating Service')
 
     return service
 
 
-def deploy_service_account(api, manifest, version):
+def deploy_service_account(api, manifest, version, update):
     """Deploy Service Account."""
 
     logging.info("Deploying")
@@ -178,11 +192,13 @@ def deploy_service_account(api, manifest, version):
         check_namespace(api, service_account.obj['metadata']['namespace'])
 
     if not service_account.exists():
-        logging.info("Creating service_account")
+        logging.info("Creating ServiceAccount")
         service_account.create()
-    else:
-        logging.info("Updating service_account")
+    elif update:
+        logging.info("Updating ServiceAccount")
         service_account.update()
+    else:
+        logging.info('Not updating ServiceAccount')
 
     return service_account
 
@@ -219,6 +235,7 @@ def get_revision(api, app_label, version, timeout=60, namespace="default"):
         time.sleep(2)
     raise RuntimeError('Timeout')
 
+
 def wait_for_deployment(deployment, our_revision, timeout=60):
     """Wait for deployment to complete.
 
@@ -250,26 +267,26 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
                 time.sleep(2)
                 continue
 
-            if 'availableReplicas' in deployment.obj['status'] and 'updatedReplicas' in deployment.obj['status'] and \
-                deployment.obj['status']['updatedReplicas'] == deployment.obj['status']['availableReplicas'] and \
-                deployment.obj['status']['replicas'] == deployment.obj['status']['availableReplicas']:
+            if ('availableReplicas' in deployment.obj['status'] and 'updatedReplicas' in deployment.obj['status'] and
+                    deployment.obj['status']['updatedReplicas'] == deployment.obj['status']['availableReplicas'] and
+                    deployment.obj['status']['replicas'] == deployment.obj['status']['availableReplicas']):
 
-                #Final check, just in case
-                if 'unavailableReplicas' in deployment.obj['status'] and \
-                    deployment.obj['status']['unavailableReplicas'] != 0:
+                # Final check, just in case
+                if ('unavailableReplicas' in deployment.obj['status'] and
+                        deployment.obj['status']['unavailableReplicas'] != 0):
                     logging.info("Unavailable != 0")
                     time.sleep(2)
                     continue
 
                 logging.info("Done waiting for deployment")
                 if current_revision != our_revision:
-                    logging.info("Looks like our deployment got bumped ours: %s current: %s", \
+                    logging.info("Looks like our deployment got bumped ours: %s current: %s",
                                  our_revision, current_revision)
 
                 # All checks passed so deployment looks successful
                 return current_revision
 
-        except Exception:  #pylint: disable=w0703
+        except Exception:  # pylint: disable=w0703
             logging.error("Error:", exc_info=True)
 
         time.sleep(2)
@@ -277,16 +294,16 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
     raise RuntimeError('Timeout')
 
 
-def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, timeout=240):
+def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, timeout=240, update=True):
     """Deploy to cluster from a manifest file"""
 
     logging.info('Loading manifest')
 
     deploy_resource = render_k8s_resource(manifest_filename, variables)
-    k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout)
+    k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout, update)
 
 
-def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240):
+def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240, update=True):
     """Deploy to cluster using provided manifest"""
 
     start_deployment = time.time()
@@ -298,17 +315,17 @@ def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240):
     kind = manifest['kind']
 
     if kind == 'Deployment':
-        deploy_deployment(api, manifest, version, timeout)
+        deploy_deployment(api, manifest, version, timeout, update)
     elif kind == 'Service':
-        deploy_service(api, manifest, version, timeout)
+        deploy_service(api, manifest, version, timeout, update)
     elif kind == 'ConfigMap':
-        deploy_config_map(api, manifest, version, timeout)
+        deploy_config_map(api, manifest, version, timeout, update)
     elif kind == 'ServiceAccount':
-        deploy_service_account(api, manifest, version)
+        deploy_service_account(api, manifest, version, update)
     elif kind == 'DaemonSet':
-        deploy_daemon_set(api, manifest, version)
+        deploy_daemon_set(api, manifest, version, update)
     else:
         raise RuntimeError('Unsupported manifest kind')
 
     end_deployment = time.time()
-    logging.info("Deploying complete. %ds", end_deployment-start_deployment)
+    logging.info("Deploying complete. %ds", end_deployment - start_deployment)
