@@ -62,11 +62,13 @@ phases:         # CICD phases.  Define whatever phases needed and specify with -
 
     - k8s_deploy:                         # Deploy supported k8s manifests
         manifest: nginx-deployment.yaml
+        vars:
+          queue: urltasks
 
     - k8s_deploy:
         update: false                     # Available for all k8s_ tasks.  If false the k8s manifest will only be used to create the
-                                          # resource if it does not exist, otherwise an existing resource will not be updated.  
-                                          # This can be useful for services to not have unneeded proxy port changes. 
+                                          # resource if it does not exist, otherwise an existing resource will not be updated.
+                                          # This can be useful for services to not have unneeded proxy port changes.
                                           # Defaults to true.
         manifest: nginx-service.yaml
 
