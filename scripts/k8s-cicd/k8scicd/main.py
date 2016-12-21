@@ -155,8 +155,13 @@ class CICDProcessor(object):
         else:
             update = True
 
+        # Add the config file settings to the variables list, these will override existing vars if they exist
+        temp_vars = self.variables.copy()
+        if 'vars' in settings:
+            temp_vars.update(settings['vars'])
+
         k8s_deploy_from_file(self.variables['KUBE_CONFIG'], settings['manifest'], self.variables['VERSION'],
-                             self.variables, timeout=self.get_command_timeout(settings), update=update)
+                             temp_vars, timeout=self.get_command_timeout(settings), update=update)
 
     def command_run(self, service_directory, settings):
         """Run bash script."""
