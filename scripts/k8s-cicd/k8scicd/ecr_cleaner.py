@@ -7,7 +7,7 @@ import logging
 import sys
 
 import boto3
-
+import pytz
 
 def init():
     """Initialize system."""
@@ -109,14 +109,10 @@ def find_old_images(ecr_client, registry_id, repository_name, min_num, max_age):
             image_tag = ""
         else:
             image_tag = image['imageTag']
-        image_detail = ecr_client.batch_get_image(registryId=registry_id, repositoryName=repository_name,
+        image_detail = ecr_client.describe_images(registryId=registry_id, repositoryName=repository_name,
                                                   imageIds=[{'imageDigest': image['imageDigest'], }, ])
 
-        mani = json.loads(image_detail['images'][0]['imageManifest'])
-        mani2 = json.loads(mani['history'][0]['v1Compatibility'])
-
-        image_date = datetime.datetime.strptime(mani2['created'][:-4], '%Y-%m-%dT%H:%M:%S.%f')
-
+        image_date = image_detail['imageDetails'][0]['imagePushedAt']
         sorted_images.append((image['imageDigest'], image_tag, image_date))
 
     sorted_images = sorted(sorted_images, key=lambda tup: tup[2])
@@ -132,7 +128,7 @@ def find_old_images(ecr_client, registry_id, repository_name, min_num, max_age):
         if len(sorted_images) - len(old_images) + 1 <= min_num:
             logging.info("Need to stop to stay above min_num")
             break
-        age = (datetime.datetime.utcnow() - image[2]).total_seconds() / 60.0 / 60.0 / 24.0
+        age = (datetime.datetime.now(pytz.UTC) - image[2]).total_seconds() / 60.0 / 60.0 / 24.0
         if age > max_age:
             logging.debug('Old image %s', image)
             old_images.append(image)
