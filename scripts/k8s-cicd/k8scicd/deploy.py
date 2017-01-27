@@ -70,6 +70,54 @@ metadata:
     namespace.create()
 
 
+def deploy_cluster_role(api, manifest, version, update):
+    """Deploy Service Account."""
+
+    logging.info("Deploying cluster role")
+
+    role = pykube.ClusterRole(api, manifest)
+
+    role.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
+
+    if 'metadata' in role.obj and 'namespace' in role.obj['metadata']:
+        check_namespace(api, role.obj['metadata']['namespace'])
+
+    if not role.exists():
+        logging.info("Creating ClusterRole")
+        role.create()
+    elif update:
+        logging.info("Updating ClusterRole")
+        role.update()
+    else:
+        logging.info('Not updating ClusterRole')
+
+    return role
+
+
+def deploy_cluster_role_binding(api, manifest, version, update):
+    """Deploy Service Account."""
+
+    logging.info("Deploying ClusterRoleBinding")
+
+    role_binding = pykube.ClusterRoleBinding(api, manifest)
+
+    role_binding.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
+
+    if 'metadata' in role_binding.obj and 'namespace' in role_binding.obj['metadata']:
+        check_namespace(api, role_binding.obj['metadata']['namespace'])
+
+    if not role_binding.exists():
+        logging.info("Creating ClusterRoleBinding")
+        role_binding.create()
+    elif update:
+        logging.info("Updating ClusterRoleBinding")
+        role_binding.update()
+    else:
+        logging.info('Not updating ClusterRoleBinding')
+
+    return role_binding
+
+
 def deploy_config_map(api, manifest, version, timeout, update):
     """Deploy Config Map."""
 
@@ -97,7 +145,7 @@ def deploy_config_map(api, manifest, version, timeout, update):
 def deploy_daemon_set(api, manifest, version, update):
     """Deploy Daemon Set."""
 
-    logging.info("Deploying")
+    logging.info("Deploying daemonset")
 
     daemon_set = pykube.DaemonSet(api, manifest)
 
@@ -121,7 +169,7 @@ def deploy_daemon_set(api, manifest, version, update):
 def deploy_deployment(api, manifest, version, timeout, update):
     """Deploy Deployment."""
 
-    logging.info("Deploying")
+    logging.info("Deploying deployment")
 
     deployment = pykube.Deployment(api, manifest)
 
@@ -155,10 +203,58 @@ def deploy_deployment(api, manifest, version, timeout, update):
     return deployment
 
 
+def deploy_role(api, manifest, version, update):
+    """Deploy Service Account."""
+
+    logging.info("Deploying role")
+
+    role = pykube.Role(api, manifest)
+
+    role.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
+
+    if 'metadata' in role.obj and 'namespace' in role.obj['metadata']:
+        check_namespace(api, role.obj['metadata']['namespace'])
+
+    if not role.exists():
+        logging.info("Creating Role")
+        role.create()
+    elif update:
+        logging.info("Updating Role")
+        role.update()
+    else:
+        logging.info('Not updating Role')
+
+    return role
+
+
+def deploy_role_binding(api, manifest, version, update):
+    """Deploy Service Account."""
+
+    logging.info("Deploying RoleBinding")
+
+    role_binding = pykube.RoleBinding(api, manifest)
+
+    role_binding.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
+
+    if 'metadata' in role_binding.obj and 'namespace' in role_binding.obj['metadata']:
+        check_namespace(api, role_binding.obj['metadata']['namespace'])
+
+    if not role_binding.exists():
+        logging.info("Creating RoleBinding")
+        role_binding.create()
+    elif update:
+        logging.info("Updating RoleBinding")
+        role_binding.update()
+    else:
+        logging.info('Not updating RoleBinding')
+
+    return role_binding
+
+
 def deploy_service(api, manifest, version, timeout, update):
     """Deploy Service."""
 
-    logging.info("Deploying")
+    logging.info("Deploying service")
 
     service = pykube.Service(api, manifest)
 
@@ -182,7 +278,7 @@ def deploy_service(api, manifest, version, timeout, update):
 def deploy_service_account(api, manifest, version, update):
     """Deploy Service Account."""
 
-    logging.info("Deploying")
+    logging.info("Deploying service account")
 
     service_account = pykube.ServiceAccount(api, manifest)
 
@@ -294,23 +390,27 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
     raise RuntimeError('Timeout')
 
 
-def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, timeout=240, update=True):
+def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, timeout=240, update=True, context=None):
     """Deploy to cluster from a manifest file"""
 
     logging.info('Loading manifest')
 
     deploy_resource = render_k8s_resource(manifest_filename, variables)
-    k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout, update)
+    k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout, update, context)
 
 
-def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240, update=True):
+def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240, update=True, context=None):
     """Deploy to cluster using provided manifest"""
 
     start_deployment = time.time()
 
     logging.info('Starting k8s deployment')
 
-    api = pykube.HTTPClient(pykube.KubeConfig.from_file(kube_config))
+    kubeconfig = pykube.KubeConfig.from_file(kube_config)
+    if context:
+        logging.info('Setting kube context: %s', context)
+        kubeconfig.set_current_context(context)
+    api = pykube.HTTPClient(kubeconfig)
 
     kind = manifest['kind']
 
@@ -324,6 +424,14 @@ def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240, update
         deploy_service_account(api, manifest, version, update)
     elif kind == 'DaemonSet':
         deploy_daemon_set(api, manifest, version, update)
+    elif kind == 'Role':
+        deploy_role(api, manifest, version, update)
+    elif kind == 'RoleBinding':
+        deploy_role_binding(api, manifest, version, update)
+    elif kind == 'ClusterRole':
+        deploy_cluster_role(api, manifest, version, update)
+    elif kind == 'ClusterRoleBinding':
+        deploy_cluster_role_binding(api, manifest, version, update)
     else:
         raise RuntimeError('Unsupported manifest kind')
 

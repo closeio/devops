@@ -40,6 +40,7 @@ class CICDProcessor(object):
         self.phases = None
         self.variables = None
         self.process_subdirs = False
+        self.kubeconfig_context = None
 
     @staticmethod
     def _run_process(args, ignore_error=False, timeout=240, shell=False):
@@ -145,7 +146,8 @@ class CICDProcessor(object):
             update = True
 
         k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], manifest, self.variables['VERSION'],
-                                 timeout=self.get_command_timeout(settings), update=update)
+                                 timeout=self.get_command_timeout(settings), update=update,
+                                 context=self.kubeconfig_context)
 
     def command_k8s_deploy(self, service_directory, settings):
         """Deploy to k8s."""
@@ -161,7 +163,8 @@ class CICDProcessor(object):
             temp_vars.update(settings['vars'])
 
         k8s_deploy_from_file(self.variables['KUBE_CONFIG'], settings['manifest'], self.variables['VERSION'],
-                             temp_vars, timeout=self.get_command_timeout(settings), update=update)
+                             temp_vars, timeout=self.get_command_timeout(settings), update=update,
+                             context=self.kubeconfig_context)
 
     def command_run(self, service_directory, settings):
         """Run bash script."""
@@ -257,6 +260,7 @@ class CICDProcessor(object):
         parser.add_argument('-f', '--filename', help='Deployment file name (default: service.yaml)',
                             default='service.yaml', required=False)
         parser.add_argument('-s', '--subdirs', help='Process subdirectories', required=False, action='store_true')
+        parser.add_argument('-c', '--context', help='Kubeconfig context', default=None, required=False)
 
         parser.add_argument('-v', '--variable', required=False, action='append',
                             help='Format var1=value1. Multiple variables are allowed.')
@@ -268,6 +272,7 @@ class CICDProcessor(object):
         self.filename = args.filename
         self.phases = args.phase.split(',')
         self.process_subdirs = args.subdirs
+        self.kubeconfig_context = args.context
 
         # Build variables dictionary based on variables passed on command line
         self.variables = {}
