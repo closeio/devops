@@ -121,7 +121,7 @@ def deploy_cluster_role_binding(api, manifest, version, update):
 def deploy_config_map(api, manifest, version, timeout, update):
     """Deploy Config Map."""
 
-    logging.info("Deploying")
+    logging.info("Deploying configmap")
 
     configmap = pykube.ConfigMap(api, manifest)
 
