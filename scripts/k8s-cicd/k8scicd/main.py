@@ -41,6 +41,7 @@ class CICDProcessor(object):
         self.variables = None
         self.process_subdirs = False
         self.kubeconfig_context = None
+        self.default_timeout = 240
 
     @staticmethod
     def _run_process(args, ignore_error=False, timeout=240, shell=False):
@@ -210,7 +211,7 @@ class CICDProcessor(object):
         if 'timeout' in settings:
             return settings['timeout']
         else:
-            return 240
+            return self.default_timeout
 
     def get_service_files(self):
         """Return ordered list of service files."""
@@ -260,6 +261,7 @@ class CICDProcessor(object):
         parser.add_argument('-f', '--filename', help='Deployment file name (default: service.yaml)',
                             default='service.yaml', required=False)
         parser.add_argument('-s', '--subdirs', help='Process subdirectories', required=False, action='store_true')
+        parser.add_argument('-t', '--timeout', help='Default timeout (240 seconds)', required=False, type=int, default=240)
         parser.add_argument('-c', '--context', help='Kubeconfig context', default=None, required=False)
 
         parser.add_argument('-v', '--variable', required=False, action='append',
@@ -273,6 +275,8 @@ class CICDProcessor(object):
         self.phases = args.phase.split(',')
         self.process_subdirs = args.subdirs
         self.kubeconfig_context = args.context
+        self.default_timeout = args.timeout
+        logging.info('Setting default timeout to %d', self.default_timeout)
 
         # Build variables dictionary based on variables passed on command line
         self.variables = {}
