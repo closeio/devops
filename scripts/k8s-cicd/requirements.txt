@@ -1,4 +1,4 @@
-appdirs==1.4.0
+appdirs==1.4.3
 awscli==1.11.10
 boto3==1.4.1
 botocore==1.4.67
@@ -15,7 +15,7 @@ packaging==16.8
 pyasn1==0.1.9
 pyasn1-modules==0.0.8
 pykube==0.14.0
-pyparsing==2.1.10
+pyparsing==2.2.0
 python-dateutil==2.5.3
 pytz==2016.10
 PyYAML==3.12
