@@ -393,7 +393,7 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
 def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, timeout=240, update=True, context=None):
     """Deploy to cluster from a manifest file"""
 
-    logging.info('Loading manifest')
+    logging.info('Loading manifest %s', manifest_filename)
 
     deploy_resource = render_k8s_resource(manifest_filename, variables)
     k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout, update, context)
