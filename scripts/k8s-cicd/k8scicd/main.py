@@ -3,6 +3,7 @@
 import argparse
 import base64
 import datetime
+from distutils.version import LooseVersion
 import logging
 import os
 import os.path
@@ -42,9 +43,24 @@ class CICDProcessor(object):
         self.process_subdirs = False
         self.kubeconfig_context = None
         self.default_timeout = 240
+        self._legacy_email_flag = self._check_docker_email_flag()
+
+    def _check_docker_email_flag(self):
+        """Check if docker needs email argument for login."""
+
+        args = ['docker', 'version', '-f', '{{ .Client.Version }}']
+        version = CICDProcessor._run_process(args, capture_output=True)
+        version = LooseVersion(version)
+        if version >= LooseVersion('17.06'):
+            logging.info('Newer login command supported')
+            return False
+        else:
+            logging.info('Legacy login command needed')
+            return True
 
     @staticmethod
-    def _run_process(args, ignore_error=False, timeout=240, shell=False):
+    def _run_process(args, ignore_error=False, timeout=240, shell=False,
+                     capture_output=False):
         """Runs a OS process and waits for it to exit"""
 
         args = [str(a) for a in args]
@@ -54,16 +70,29 @@ class CICDProcessor(object):
         if shell:
             logging.info('Via shell')
             args = ' '.join(args)
-        process = subprocess.Popen(args, close_fds=True, shell=shell)
+
+        if capture_output:
+            stdout = subprocess.PIPE
+        else:
+            stdout = None
+        output = ''
+        process = subprocess.Popen(args, close_fds=True, shell=shell, stdout=stdout)
         start_time = datetime.datetime.now()
-        while process.returncode is None:
+        while True:
             time.sleep(.5)
+            tmp_output = process.communicate()
+            if tmp_output[0]:
+                output += tmp_output[0].decode('utf-8')
             process.poll()
             if (datetime.datetime.now() - start_time).total_seconds() > timeout:
                 raise ProcessingError('Timeout running command')
+            if process.returncode is not None:
+                break
+
         if not ignore_error and process.returncode != 0:
             logging.error('Non-zero return code %d', process.returncode)
             raise ProcessingError('Process returned non-zero')
+        return output
 
     def command_docker(self, service_directory, settings):
         """Run docker command."""
@@ -105,15 +134,17 @@ class CICDProcessor(object):
 
         ecr_token = ecr_token.split(':')
 
-        args = {'args': ['login',
+        process_args = ['login',
                          '-u',
                          ecr_token[0],
                          '-p',
-                         ecr_token[1],
-                         '-e',
-                         'none',
-                         settings['name']
-                         ]}
+                         ecr_token[1]]
+
+        if self._legacy_email_flag:
+            process_args += ['-e', 'none']
+
+        process_args += [settings['name']]
+        args = {'args': process_args}
 
         self.command_docker(service_directory, args)
 
