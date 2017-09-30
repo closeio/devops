@@ -2,12 +2,12 @@
 
 import argparse
 import datetime
-import json
 import logging
 import sys
 
 import boto3
 import pytz
+
 
 def init():
     """Initialize system."""
@@ -171,6 +171,7 @@ def doit():
     client = boto3.client('ecr', region_name=args.region)
     old_ecr_images = find_old_images(client, args.account, args.reponame, args.min, args.days)
     delete_old_images(client, old_ecr_images, args.account, args.reponame)
+
 
 if __name__ == "__main__":
     try:

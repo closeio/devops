@@ -136,10 +136,10 @@ class CICDProcessor(object):
         ecr_token = ecr_token.split(':')
 
         process_args = ['login',
-                         '-u',
-                         ecr_token[0],
-                         '-p',
-                         ecr_token[1]]
+                        '-u',
+                        ecr_token[0],
+                        '-p',
+                        ecr_token[1]]
 
         if self._legacy_email_flag:
             process_args += ['-e', 'none']

@@ -33,6 +33,7 @@ def render_k8s_resource(file_name, variables):
 
     Returns:
         Rendered resource dict
+
     """
 
     with open(file_name, 'r') as deploy_file:
@@ -301,7 +302,7 @@ def deploy_service_account(api, manifest, version, update):
 
 
 def get_revision(api, app_label, version, timeout=60, namespace="default"):
-    """Polls k8s cluster to get deployment revision number.
+    """Poll k8s cluster to get deployment revision number.
 
     Using the app label for a ReplicaSet the cluster is polled to find the matching version label
     for this deployment.
@@ -317,6 +318,7 @@ def get_revision(api, app_label, version, timeout=60, namespace="default"):
 
     Raises:
         RuntimeError: Raises exception if timeout is exceeded.
+
     """
 
     logging.info("Getting revision of our deployment: %s", app_label)
@@ -368,11 +370,11 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
                 continue
 
             if ('availableReplicas' in deployment.obj['status'] and
-                'updatedReplicas' in deployment.obj['status'] and
-                deployment.obj['status']['updatedReplicas'] ==
-                deployment.obj['status']['availableReplicas'] and
-                deployment.obj['status']['replicas'] ==
-                deployment.obj['status']['availableReplicas']):
+                    'updatedReplicas' in deployment.obj['status'] and
+                    deployment.obj['status']['updatedReplicas'] ==
+                    deployment.obj['status']['availableReplicas'] and
+                    deployment.obj['status']['replicas'] ==
+                    deployment.obj['status']['availableReplicas']):
 
                 # Final check, just in case
                 if ('unavailableReplicas' in deployment.obj['status'] and
