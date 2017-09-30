@@ -12,10 +12,12 @@ DELAY = .01  # Sleep a little to not impact redis performance
 
 loop = True
 
+
 def signal_handler(signum, frame):
     global loop
     print("Caught ctrl-c, finishing up.")
     loop = False
+
 
 def get_size(client, key, key_type):
     size = -1
@@ -31,6 +33,7 @@ def get_size(client, key, key_type):
         size = client.hlen(key)
 
     return size
+
 
 def run():
     client = redis.Redis(host=HOSTNAME, port=PORT, db=DB)
@@ -56,6 +59,7 @@ def run():
         time.sleep(DELAY)
 
     log_file.close()
+
 
 if __name__ == '__main__':
     run()
