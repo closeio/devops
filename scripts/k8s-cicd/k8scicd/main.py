@@ -111,7 +111,8 @@ class CICDProcessor(object):
         else:
             ignore_error = False
 
-        self._run_process(args, ignore_error, shell=True, timeout=self.get_command_timeout(settings))
+        self._run_process(args, ignore_error, shell=True,
+                          timeout=self.get_command_timeout(settings))
         os.chdir(cwd)
 
     def command_ecr_login(self, service_directory, settings):
@@ -168,7 +169,8 @@ class CICDProcessor(object):
                 with open(settings['data'][i][value]['name']) as config_file:
                     manifest['data'][settings['data'][i][value]['key']] = config_file.read()
             elif value == 'value':
-                manifest['data'][settings['data'][i][value]['key']] = settings['data'][i][value]['data']
+                manifest['data'][settings['data'][i][value]['key']] = \
+                    settings['data'][i][value]['data']
             else:
                 raise ProcessingError('Unknown config map data type')
 
@@ -189,14 +191,16 @@ class CICDProcessor(object):
         else:
             update = True
 
-        # Add the config file settings to the variables list, these will override existing vars if they exist
+        # Add the config file settings to the variables list,
+        # these will override existing vars if they exist
         temp_vars = self.variables.copy()
         if 'vars' in settings:
             temp_vars.update(settings['vars'])
 
-        k8s_deploy_from_file(self.variables['KUBE_CONFIG'], settings['manifest'], self.variables['VERSION'],
-                             temp_vars, timeout=self.get_command_timeout(settings), update=update,
-                             context=self.kubeconfig_context)
+        k8s_deploy_from_file(self.variables['KUBE_CONFIG'],
+                             settings['manifest'], self.variables['VERSION'],
+                             temp_vars, timeout=self.get_command_timeout(settings),
+                             update=update, context=self.kubeconfig_context)
 
     def command_run(self, service_directory, settings):
         """Run bash script."""
@@ -234,7 +238,8 @@ class CICDProcessor(object):
 
     def command_prune_ecr(self, service_directory, settings):
 
-        prune_ecr(settings['region'], str(settings['account']), settings['name'], settings['days'], settings['min_num'])
+        prune_ecr(settings['region'], str(settings['account']), settings['name'],
+                  settings['days'], settings['min_num'])
 
     def get_command_timeout(self, settings):
         """Get timeout in config sections."""
@@ -287,13 +292,17 @@ class CICDProcessor(object):
 
         parser = argparse.ArgumentParser()
 
-        parser.add_argument('-p', '--phase', help='Phases to run in deploy file.  Comma separated.', required=True)
+        parser.add_argument('-p', '--phase', help='Phases to run in deploy file.  Comma separated.',
+                            required=True)
         parser.add_argument('-d', '--dir', help='Directory to scan for deploy files', required=True)
         parser.add_argument('-f', '--filename', help='Deployment file name (default: service.yaml)',
                             default='service.yaml', required=False)
-        parser.add_argument('-s', '--subdirs', help='Process subdirectories', required=False, action='store_true')
-        parser.add_argument('-t', '--timeout', help='Default timeout (240 seconds)', required=False, type=int, default=240)
-        parser.add_argument('-c', '--context', help='Kubeconfig context', default=None, required=False)
+        parser.add_argument('-s', '--subdirs', help='Process subdirectories',
+                            required=False, action='store_true')
+        parser.add_argument('-t', '--timeout', help='Default timeout (240 seconds)',
+                            required=False, type=int, default=240)
+        parser.add_argument('-c', '--context', help='Kubeconfig context', default=None,
+                            required=False)
 
         parser.add_argument('-v', '--variable', required=False, action='append',
                             help='Format var1=value1. Multiple variables are allowed.')
@@ -359,7 +368,8 @@ class CICDProcessor(object):
             self.variables['KUBE_CONFIG'] = os.path.realpath(os.path.expanduser('~/.kube/config'))
             logging.info('Set kube config to:%s', self.variables['KUBE_CONFIG'])
         else:
-            self.variables['KUBE_CONFIG'] = os.path.realpath(os.path.expanduser(self.variables['KUBE_CONFIG']))
+            self.variables['KUBE_CONFIG'] = os.path.realpath(
+                os.path.expanduser(self.variables['KUBE_CONFIG']))
 
         for phase in self.phases:
             logging.info('Running phase:%s', phase)

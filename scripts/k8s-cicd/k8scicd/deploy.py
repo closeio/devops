@@ -197,7 +197,8 @@ def deploy_deployment(api, manifest, version, timeout, update):
         namespace = 'default'
 
     revision = get_revision(api, app_label, version, timeout, namespace)
-    time.sleep(3)  # Hack to make sure deployment has a chance to start - Need a better way to detect this
+    # Hack to make sure deployment has a chance to start - Need a better way to detect this
+    time.sleep(3)
     wait_for_deployment(deployment, revision, timeout)
 
     return deployment
@@ -325,7 +326,8 @@ def get_revision(api, app_label, version, timeout=60, namespace="default"):
             selector={"app__in": {app_label}}).filter(namespace=namespace)
         for replica_set in replication_sets:
             if replica_set.obj['metadata']['labels']['version'] == version:
-                logging.info("Our revision: %s", replica_set.annotations['deployment.kubernetes.io/revision'])
+                logging.info("Our revision: %s",
+                             replica_set.annotations['deployment.kubernetes.io/revision'])
                 return replica_set.annotations['deployment.kubernetes.io/revision']
 
         time.sleep(2)
@@ -335,8 +337,9 @@ def get_revision(api, app_label, version, timeout=60, namespace="default"):
 def wait_for_deployment(deployment, our_revision, timeout=60):
     """Wait for deployment to complete.
 
-    Polls k8s cluster waiting for the number of replicas to stabilize indicating a successful deployment.  Watches
-    the revision number to determine if a new deployment cancelled this deployment.
+    Polls k8s cluster waiting for the number of replicas to stabilize indicating
+    a successful deployment.  Watches the revision number to determine if a new
+    deployment cancelled this deployment.
 
     Args:
         deployment: Pykube deployment instance
@@ -344,7 +347,8 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
         timeout: Seconds to poll cluster waiting for deployment to complete
 
     Returns:
-        revision: String of the actual revision that got deployment.  May not be this deployment's revision.
+        revision: String of the actual revision that got deployment.  May not be
+                  this deployment's revision.
 
     Raises:
         RuntimeError: Raises exception if timeout is exceeded.
@@ -363,9 +367,12 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
                 time.sleep(2)
                 continue
 
-            if ('availableReplicas' in deployment.obj['status'] and 'updatedReplicas' in deployment.obj['status'] and
-                    deployment.obj['status']['updatedReplicas'] == deployment.obj['status']['availableReplicas'] and
-                    deployment.obj['status']['replicas'] == deployment.obj['status']['availableReplicas']):
+            if ('availableReplicas' in deployment.obj['status'] and
+                'updatedReplicas' in deployment.obj['status'] and
+                deployment.obj['status']['updatedReplicas'] ==
+                deployment.obj['status']['availableReplicas'] and
+                deployment.obj['status']['replicas'] ==
+                deployment.obj['status']['availableReplicas']):
 
                 # Final check, just in case
                 if ('unavailableReplicas' in deployment.obj['status'] and
@@ -390,7 +397,8 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
     raise RuntimeError('Timeout')
 
 
-def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, timeout=240, update=True, context=None):
+def k8s_deploy_from_file(kube_config, manifest_filename, version, variables,
+                         timeout=240, update=True, context=None):
     """Deploy to cluster from a manifest file"""
 
     logging.info('Loading manifest %s', manifest_filename)
@@ -399,7 +407,8 @@ def k8s_deploy_from_file(kube_config, manifest_filename, version, variables, tim
     k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout, update, context)
 
 
-def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240, update=True, context=None):
+def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240,
+                             update=True, context=None):
     """Deploy to cluster using provided manifest"""
 
     start_deployment = time.time()

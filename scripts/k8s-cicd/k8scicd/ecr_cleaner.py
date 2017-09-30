@@ -37,10 +37,13 @@ def get_images(ecr_client, token, registry_id, repository_name):
     """
 
     if token:
-        response = ecr_client.list_images(registryId=registry_id, repositoryName=repository_name, maxResults=50,
+        response = ecr_client.list_images(registryId=registry_id,
+                                          repositoryName=repository_name,
+                                          maxResults=50,
                                           nextToken=token)
     else:
-        response = ecr_client.list_images(registryId=registry_id, repositoryName=repository_name, maxResults=50)
+        response = ecr_client.list_images(registryId=registry_id,
+                                          repositoryName=repository_name, maxResults=50)
     token = None
     if 'nextToken' in response:
         token = response['nextToken']
@@ -75,8 +78,9 @@ def find_old_images(ecr_client, registry_id, repository_name, min_num, max_age):
         ecr_client: Boto3 client
         registry_id: AWS Account ID string
         repository_name: ECR repository name string
-        min_num: The minimum number of images we should keep in ECR.  Old images will be kept to ensure the total
-            number does not end up below this number.
+        min_num: The minimum number of images we should keep in ECR.
+                 Old images will be kept to ensure the total
+                 number does not end up below this number.
         max_age: Maximum age in days before images should be considered for deletion.
     """
 
@@ -109,8 +113,11 @@ def find_old_images(ecr_client, registry_id, repository_name, min_num, max_age):
             image_tag = ""
         else:
             image_tag = image['imageTag']
-        image_detail = ecr_client.describe_images(registryId=registry_id, repositoryName=repository_name,
-                                                  imageIds=[{'imageDigest': image['imageDigest'], }, ])
+        image_detail = ecr_client.describe_images(registryId=registry_id,
+                                                  repositoryName=repository_name,
+                                                  imageIds=[{'imageDigest':
+                                                             image['imageDigest'],
+                                                             }, ])
 
         image_date = image_detail['imageDetails'][0]['imagePushedAt']
         sorted_images.append((image['imageDigest'], image_tag, image_date))
@@ -150,10 +157,13 @@ def doit():
 
     init()
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--days', help='Maximum days old Default: 14', type=int, default=14)
-    parser.add_argument('-m', '--min', help='Minimum number to keep Default 10', type=int, default=10)
+    parser.add_argument('-d', '--days', help='Maximum days old Default: 14',
+                        type=int, default=14)
+    parser.add_argument('-m', '--min', help='Minimum number to keep Default 10',
+                        type=int, default=10)
     parser.add_argument('-a', '--account', help='AWS Account Number', required=True)
-    parser.add_argument('-n', '--reponame', help='Repo name, make sure you are connected to right region',
+    parser.add_argument('-n', '--reponame',
+                        help='Repo name, make sure you are connected to right region',
                         required=True)
     parser.add_argument('-r', '--region', help='AWS Region', default=None)
     args = parser.parse_args()
