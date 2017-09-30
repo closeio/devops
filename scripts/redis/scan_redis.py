@@ -1,3 +1,4 @@
+"""Safely scan entire Redis instance and report key stats."""
 import signal
 import time
 
@@ -12,12 +13,18 @@ DELAY = .01  # Sleep a little to not impact redis performance
 
 loop = True
 
+
 def signal_handler(signum, frame):
+    """Signal handler."""
+
     global loop
-    print("Caught ctrl-c, finishing up.")
+    print('Caught ctrl-c, finishing up.')
     loop = False
 
+
 def get_size(client, key, key_type):
+    """Get size of key."""
+
     size = -1
     if key_type == 'string':
         size = client.strlen(key)
@@ -32,7 +39,10 @@ def get_size(client, key, key_type):
 
     return size
 
+
 def run():
+    """Run scan."""
+
     client = redis.Redis(host=HOSTNAME, port=PORT, db=DB)
 
     print 'Scanning redis keys'
@@ -56,6 +66,7 @@ def run():
         time.sleep(DELAY)
 
     log_file.close()
+
 
 if __name__ == '__main__':
     run()
