@@ -5,10 +5,12 @@ import datetime
 import logging
 import sys
 import time
-import yaml
 
 import jinja2
+
 import pykube
+
+import yaml
 
 
 def init():
@@ -74,7 +76,7 @@ metadata:
 def deploy_cluster_role(api, manifest, version, update):
     """Deploy Service Account."""
 
-    logging.info("Deploying cluster role")
+    logging.info('Deploying cluster role')
 
     role = pykube.ClusterRole(api, manifest)
 
@@ -84,10 +86,10 @@ def deploy_cluster_role(api, manifest, version, update):
         check_namespace(api, role.obj['metadata']['namespace'])
 
     if not role.exists():
-        logging.info("Creating ClusterRole")
+        logging.info('Creating ClusterRole')
         role.create()
     elif update:
-        logging.info("Updating ClusterRole")
+        logging.info('Updating ClusterRole')
         role.update()
     else:
         logging.info('Not updating ClusterRole')
@@ -98,7 +100,7 @@ def deploy_cluster_role(api, manifest, version, update):
 def deploy_cluster_role_binding(api, manifest, version, update):
     """Deploy Service Account."""
 
-    logging.info("Deploying ClusterRoleBinding")
+    logging.info('Deploying ClusterRoleBinding')
 
     role_binding = pykube.ClusterRoleBinding(api, manifest)
 
@@ -108,10 +110,10 @@ def deploy_cluster_role_binding(api, manifest, version, update):
         check_namespace(api, role_binding.obj['metadata']['namespace'])
 
     if not role_binding.exists():
-        logging.info("Creating ClusterRoleBinding")
+        logging.info('Creating ClusterRoleBinding')
         role_binding.create()
     elif update:
-        logging.info("Updating ClusterRoleBinding")
+        logging.info('Updating ClusterRoleBinding')
         role_binding.update()
     else:
         logging.info('Not updating ClusterRoleBinding')
@@ -122,7 +124,7 @@ def deploy_cluster_role_binding(api, manifest, version, update):
 def deploy_config_map(api, manifest, version, timeout, update):
     """Deploy Config Map."""
 
-    logging.info("Deploying configmap")
+    logging.info('Deploying configmap')
 
     configmap = pykube.ConfigMap(api, manifest)
 
@@ -132,10 +134,10 @@ def deploy_config_map(api, manifest, version, timeout, update):
         check_namespace(api, configmap.obj['metadata']['namespace'])
 
     if not configmap.exists():
-        logging.info("Creating ConfigMap")
+        logging.info('Creating ConfigMap')
         configmap.create()
     elif update:
-        logging.info("Updating ConfigMap")
+        logging.info('Updating ConfigMap')
         configmap.update()
     else:
         logging.info('Not updating ConfigMap')
@@ -146,7 +148,7 @@ def deploy_config_map(api, manifest, version, timeout, update):
 def deploy_daemon_set(api, manifest, version, update):
     """Deploy Daemon Set."""
 
-    logging.info("Deploying daemonset")
+    logging.info('Deploying daemonset')
 
     daemon_set = pykube.DaemonSet(api, manifest)
 
@@ -156,10 +158,10 @@ def deploy_daemon_set(api, manifest, version, update):
         check_namespace(api, daemon_set.obj['metadata']['namespace'])
 
     if not daemon_set.exists():
-        logging.info("Creating DaemonSet")
+        logging.info('Creating DaemonSet')
         daemon_set.create()
     elif update:
-        logging.info("Updating DaemonSet")
+        logging.info('Updating DaemonSet')
         daemon_set.update()
     else:
         logging.info('Not updating DaemonSet')
@@ -170,7 +172,7 @@ def deploy_daemon_set(api, manifest, version, update):
 def deploy_deployment(api, manifest, version, timeout, update):
     """Deploy Deployment."""
 
-    logging.info("Deploying deployment")
+    logging.info('Deploying deployment')
 
     deployment = pykube.Deployment(api, manifest)
 
@@ -208,7 +210,7 @@ def deploy_deployment(api, manifest, version, timeout, update):
 def deploy_role(api, manifest, version, update):
     """Deploy Service Account."""
 
-    logging.info("Deploying role")
+    logging.info('Deploying role')
 
     role = pykube.Role(api, manifest)
 
@@ -218,10 +220,10 @@ def deploy_role(api, manifest, version, update):
         check_namespace(api, role.obj['metadata']['namespace'])
 
     if not role.exists():
-        logging.info("Creating Role")
+        logging.info('Creating Role')
         role.create()
     elif update:
-        logging.info("Updating Role")
+        logging.info('Updating Role')
         role.update()
     else:
         logging.info('Not updating Role')
@@ -232,7 +234,7 @@ def deploy_role(api, manifest, version, update):
 def deploy_role_binding(api, manifest, version, update):
     """Deploy Service Account."""
 
-    logging.info("Deploying RoleBinding")
+    logging.info('Deploying RoleBinding')
 
     role_binding = pykube.RoleBinding(api, manifest)
 
@@ -242,10 +244,10 @@ def deploy_role_binding(api, manifest, version, update):
         check_namespace(api, role_binding.obj['metadata']['namespace'])
 
     if not role_binding.exists():
-        logging.info("Creating RoleBinding")
+        logging.info('Creating RoleBinding')
         role_binding.create()
     elif update:
-        logging.info("Updating RoleBinding")
+        logging.info('Updating RoleBinding')
         role_binding.update()
     else:
         logging.info('Not updating RoleBinding')
@@ -256,7 +258,7 @@ def deploy_role_binding(api, manifest, version, update):
 def deploy_service(api, manifest, version, timeout, update):
     """Deploy Service."""
 
-    logging.info("Deploying service")
+    logging.info('Deploying service')
 
     service = pykube.Service(api, manifest)
 
@@ -266,10 +268,10 @@ def deploy_service(api, manifest, version, timeout, update):
         check_namespace(api, service.obj['metadata']['namespace'])
 
     if not service.exists():
-        logging.info("Creating Service")
+        logging.info('Creating Service')
         service.create()
     elif update:
-        logging.info("Updating Service")
+        logging.info('Updating Service')
         service.update()
     else:
         logging.info('Not updating Service')
@@ -280,7 +282,7 @@ def deploy_service(api, manifest, version, timeout, update):
 def deploy_service_account(api, manifest, version, update):
     """Deploy Service Account."""
 
-    logging.info("Deploying service account")
+    logging.info('Deploying service account')
 
     service_account = pykube.ServiceAccount(api, manifest)
 
@@ -290,10 +292,10 @@ def deploy_service_account(api, manifest, version, update):
         check_namespace(api, service_account.obj['metadata']['namespace'])
 
     if not service_account.exists():
-        logging.info("Creating ServiceAccount")
+        logging.info('Creating ServiceAccount')
         service_account.create()
     elif update:
-        logging.info("Updating ServiceAccount")
+        logging.info('Updating ServiceAccount')
         service_account.update()
     else:
         logging.info('Not updating ServiceAccount')
@@ -301,7 +303,7 @@ def deploy_service_account(api, manifest, version, update):
     return service_account
 
 
-def get_revision(api, app_label, version, timeout=60, namespace="default"):
+def get_revision(api, app_label, version, timeout=60, namespace='default'):
     """Poll k8s cluster to get deployment revision number.
 
     Using the app label for a ReplicaSet the cluster is polled to find the matching version label
@@ -321,14 +323,14 @@ def get_revision(api, app_label, version, timeout=60, namespace="default"):
 
     """
 
-    logging.info("Getting revision of our deployment: %s", app_label)
+    logging.info('Getting revision of our deployment: %s', app_label)
     start_time = datetime.datetime.now()
     while (datetime.datetime.now() - start_time).total_seconds() < timeout:
         replication_sets = pykube.ReplicaSet.objects(api).filter(
-            selector={"app__in": {app_label}}).filter(namespace=namespace)
+            selector={'app__in': {app_label}}).filter(namespace=namespace)
         for replica_set in replication_sets:
             if replica_set.obj['metadata']['labels']['version'] == version:
-                logging.info("Our revision: %s",
+                logging.info('Our revision: %s',
                              replica_set.annotations['deployment.kubernetes.io/revision'])
                 return replica_set.annotations['deployment.kubernetes.io/revision']
 
@@ -337,7 +339,8 @@ def get_revision(api, app_label, version, timeout=60, namespace="default"):
 
 
 def wait_for_deployment(deployment, our_revision, timeout=60):
-    """Wait for deployment to complete.
+    """
+    Wait for deployment to complete.
 
     Polls k8s cluster waiting for the number of replicas to stabilize indicating
     a successful deployment.  Watches the revision number to determine if a new
@@ -354,18 +357,19 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
 
     Raises:
         RuntimeError: Raises exception if timeout is exceeded.
+
     """
 
-    logging.info("Waiting for deployment to finish")
+    logging.info('Waiting for deployment to finish')
     start_time = datetime.datetime.now()
     while (datetime.datetime.now() - start_time).total_seconds() < timeout:
         try:
             deployment.reload()
             current_revision = deployment.annotations['deployment.kubernetes.io/revision']
-            logging.info("%s %s", deployment.obj['status'], current_revision)
+            logging.info('%s %s', deployment.obj['status'], current_revision)
 
             if int(current_revision) < int(our_revision):
-                logging.info("Waiting for our deployment to start")
+                logging.info('Waiting for our deployment to start')
                 time.sleep(2)
                 continue
 
@@ -379,20 +383,20 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
                 # Final check, just in case
                 if ('unavailableReplicas' in deployment.obj['status'] and
                         deployment.obj['status']['unavailableReplicas'] != 0):
-                    logging.info("Unavailable != 0")
+                    logging.info('Unavailable != 0')
                     time.sleep(2)
                     continue
 
-                logging.info("Done waiting for deployment")
+                logging.info('Done waiting for deployment')
                 if current_revision != our_revision:
-                    logging.info("Looks like our deployment got bumped ours: %s current: %s",
+                    logging.info('Looks like our deployment got bumped ours: %s current: %s',
                                  our_revision, current_revision)
 
                 # All checks passed so deployment looks successful
                 return current_revision
 
         except Exception:  # pylint: disable=w0703
-            logging.error("Error:", exc_info=True)
+            logging.error('Error:', exc_info=True)
 
         time.sleep(2)
 
@@ -401,7 +405,7 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
 
 def k8s_deploy_from_file(kube_config, manifest_filename, version, variables,
                          timeout=240, update=True, context=None):
-    """Deploy to cluster from a manifest file"""
+    """Deploy to cluster from a manifest file."""
 
     logging.info('Loading manifest %s', manifest_filename)
 
@@ -411,7 +415,7 @@ def k8s_deploy_from_file(kube_config, manifest_filename, version, variables,
 
 def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240,
                              update=True, context=None):
-    """Deploy to cluster using provided manifest"""
+    """Deploy to cluster using provided manifest."""
 
     start_deployment = time.time()
 
@@ -447,4 +451,4 @@ def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240,
         raise RuntimeError('Unsupported manifest kind')
 
     end_deployment = time.time()
-    logging.info("Deploying complete. %ds", end_deployment - start_deployment)
+    logging.info('Deploying complete. %ds', end_deployment - start_deployment)

@@ -3,20 +3,23 @@
 import argparse
 import base64
 import datetime
-from distutils.version import LooseVersion
 import logging
 import os
 import os.path
 import subprocess
 import sys
 import time
+from distutils.version import LooseVersion
 
 import boto3
-import jinja2
-import yaml
 
 from deploy import k8s_deploy_from_file, k8s_deploy_from_manifest
+
 from ecr_cleaner import prune_ecr
+
+import jinja2
+
+import yaml
 
 
 def init():
@@ -35,6 +38,7 @@ class CICDProcessor(object):
     """CICD Processor class."""
 
     def __init__(self):
+        """CICD Constructor."""
 
         self.directory = None
         self.filename = None
@@ -61,11 +65,11 @@ class CICDProcessor(object):
     @staticmethod
     def _run_process(args, ignore_error=False, timeout=240, shell=False,
                      capture_output=False):
-        """Runs a OS process and waits for it to exit"""
+        """Run a OS process and wait for it to exit."""
 
         args = [str(a) for a in args]
 
-        logging.info("Running process:")
+        logging.info('Running process:')
         logging.info(' ' .join(args))
         if shell:
             logging.info('Via shell')
@@ -116,6 +120,7 @@ class CICDProcessor(object):
         os.chdir(cwd)
 
     def command_ecr_login(self, service_directory, settings):
+        """Login to ECR."""
 
         if 'region' in settings:
             region = settings['region']
@@ -237,6 +242,7 @@ class CICDProcessor(object):
         os.chdir(cwd)
 
     def command_prune_ecr(self, service_directory, settings):
+        """Prune old images from ECR."""
 
         prune_ecr(settings['region'], str(settings['account']), settings['name'],
                   settings['days'], settings['min_num'])
@@ -288,7 +294,7 @@ class CICDProcessor(object):
         return order
 
     def parse_args(self):
-        """Parse command line arguments"""
+        """Parse command line arguments."""
 
         parser = argparse.ArgumentParser()
 
@@ -442,6 +448,8 @@ class CICDProcessor(object):
 
 
 class ProcessingError(Exception):
+    """Processing Error exception."""
+
     pass
 
 
@@ -456,9 +464,9 @@ def run():
     logging.info('Finished CICD processor')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         run()
     except Exception as exception:  # pylint: disable=w0703
-        logging.error("Error:", exc_info=True)
+        logging.error('Error:', exc_info=True)
         sys.exit(1)
