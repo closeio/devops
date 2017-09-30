@@ -1,0 +1,25 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: closeio/circle_ubuntu:20170824145424
+    working_directory: /home/circle/devops
+    steps:
+      - checkout
+      - add_ssh_keys
+
+      - run:
+          name: Setup - Create virtualenv directory
+          command: mkdir ~/virtualenvs
+
+      - run:
+          name: Setup - Create test virtualenv
+          command: if [ ! -d ~/virtualenvs/tests ]; then  virtualenv ~/virtualenvs/tests; fi
+
+      - run:
+          name: Setup - Install test requirements
+          command: source ~/virtualenvs/tests && pip install -U pip && pip install --exists-action=s --no-deps -r /home/circle/devops/requirements_tests.txt
+
+      - run:
+          name: Test - Flake8
+          command: cd ~/devops && source ~/virtualenvs/tests && flake8
