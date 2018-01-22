@@ -26,12 +26,14 @@ loop = True
 
 
 def signal_handler(signum, frame):
+    """Signal handler."""
     global loop
     print 'Got signal'
     loop = False
 
 
 def run():
+    """Main function."""
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     client = redis.Redis(host=HOSTNAME, port=PORT, db=DB)
@@ -39,7 +41,7 @@ def run():
     copy_key = client.register_script("""local v
                                       v = redis.call("get", KEYS[1])
                                       redis.call("setex", KEYS[2], 3600, v)
-                                      """)
+                                      """) # flake8: noqa
 
     big_string = ''.join('1' for _ in xrange(1000000))
 
@@ -49,7 +51,7 @@ def run():
         key = KEY_FORMAT.format(i)
         print (key)
         client.setex(key, big_string, TTL)
-        #copy_key(keys=[COPY_SOURCE_KEY, key], args=[])
+        # copy_key(keys=[COPY_SOURCE_KEY, key], args=[])
         time.sleep(.01)
 
 
