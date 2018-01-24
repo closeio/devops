@@ -78,7 +78,10 @@ def deploy_cluster_role(api, manifest, version, update):
 
     logging.info('Deploying cluster role')
 
-    role = pykube.ClusterRole(api, manifest)
+    MyClusterRole = pykube.object_factory(api, manifest['apiVersion'],
+                                          manifest['kind'])
+
+    role = MyClusterRole(api, manifest)
 
     role.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -102,7 +105,10 @@ def deploy_cluster_role_binding(api, manifest, version, update):
 
     logging.info('Deploying ClusterRoleBinding')
 
-    role_binding = pykube.ClusterRoleBinding(api, manifest)
+    MyClusterRoleBinding = pykube.object_factory(api, manifest['apiVersion'],
+                                          manifest['kind'])
+
+    role_binding = MyClusterRoleBinding(api, manifest)
 
     role_binding.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -126,7 +132,9 @@ def deploy_config_map(api, manifest, version, timeout, update):
 
     logging.info('Deploying configmap')
 
-    configmap = pykube.ConfigMap(api, manifest)
+    MyConfigMap = pykube.object_factory(api, manifest['apiVersion'],
+                                          manifest['kind'])
+    configmap = MyConfigMap(api, manifest)
 
     configmap.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -150,7 +158,9 @@ def deploy_daemon_set(api, manifest, version, update):
 
     logging.info('Deploying daemonset')
 
-    daemon_set = pykube.DaemonSet(api, manifest)
+    MyDaemonSet = pykube.object_factory(api, manifest['apiVersion'],
+                                        manifest['kind'])
+    daemon_set = MyDaemonSet(api, manifest)
 
     daemon_set.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -174,7 +184,9 @@ def deploy_deployment(api, manifest, version, timeout, update):
 
     logging.info('Deploying deployment')
 
-    deployment = pykube.Deployment(api, manifest)
+    MyDeployment = pykube.object_factory(api, manifest['apiVersion'],
+                                         manifest['kind'])
+    deployment = MyDeployment(api, manifest)
 
     deployment.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -207,12 +219,41 @@ def deploy_deployment(api, manifest, version, timeout, update):
     return deployment
 
 
+def deploy_generic_manifest(api, manifest, version, update):
+    """Deploy generic manifest."""
+
+    logging.info('Deploying generic manifest')
+
+    MyK8sClass = pykube.object_factory(api, manifest['apiVersion'],
+                                       manifest['kind'])
+
+    k8s_object = MyK8sClass(api, manifest)
+
+    k8s_object.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
+
+    if 'metadata' in k8s_object.obj and 'namespace' in k8s_object.obj['metadata']:
+        check_namespace(api, k8s_object.obj['metadata']['namespace'])
+
+    if not k8s_object.exists():
+        logging.info('Creating %s' % manifest['kind'])
+        k8s_object.create()
+    elif update:
+        logging.info('Updating %s' % manifest['kind'])
+        k8s_object.update()
+    else:
+        logging.info('Not updating %s' % manifest['kind'])
+
+    return k8s_object
+
+
 def deploy_role(api, manifest, version, update):
     """Deploy Service Account."""
 
     logging.info('Deploying role')
 
-    role = pykube.Role(api, manifest)
+    MyRole = pykube.object_factory(api, manifest['apiVersion'],
+                                        manifest['kind'])
+    role = MyRole(api, manifest)
 
     role.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -236,7 +277,9 @@ def deploy_role_binding(api, manifest, version, update):
 
     logging.info('Deploying RoleBinding')
 
-    role_binding = pykube.RoleBinding(api, manifest)
+    MyRoleBinding = pykube.object_factory(api, manifest['apiVersion'],
+                                        manifest['kind'])
+    role_binding = MyRoleBinding(api, manifest)
 
     role_binding.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -260,7 +303,9 @@ def deploy_service(api, manifest, version, timeout, update):
 
     logging.info('Deploying service')
 
-    service = pykube.Service(api, manifest)
+    MyService = pykube.object_factory(api, manifest['apiVersion'],
+                                        manifest['kind'])
+    service = MyService(api, manifest)
 
     service.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -284,7 +329,9 @@ def deploy_service_account(api, manifest, version, update):
 
     logging.info('Deploying service account')
 
-    service_account = pykube.ServiceAccount(api, manifest)
+    MyServiceAccount = pykube.object_factory(api, manifest['apiVersion'],
+                                        manifest['kind'])
+    service_account = MyServiceAccount(api, manifest)
 
     service_account.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
 
@@ -329,7 +376,12 @@ def get_revision(api, app_label, version, timeout=60, namespace='default'):
         replication_sets = pykube.ReplicaSet.objects(api).filter(
             selector={'app__in': {app_label}}).filter(namespace=namespace)
         for replica_set in replication_sets:
-            if replica_set.obj['metadata']['labels']['version'] == version:
+            if 'version' in replica_set.obj['metadata']['annotations']:
+                rs_version = replica_set.obj['metadata']['annotations']['version']
+            else:
+                # Support older deployments where the version is a label
+                rs_version = replica_set.obj['metadata']['labels']['version']
+            if rs_version == version:
                 logging.info('Our revision: %s',
                              replica_set.annotations['deployment.kubernetes.io/revision'])
                 return replica_set.annotations['deployment.kubernetes.io/revision']
@@ -447,6 +499,8 @@ def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240,
         deploy_cluster_role(api, manifest, version, update)
     elif kind == 'ClusterRoleBinding':
         deploy_cluster_role_binding(api, manifest, version, update)
+    elif kind == 'Ingress':
+        deploy_generic_manifest(api, manifest, version, update)
     else:
         raise RuntimeError('Unsupported manifest kind')
 
