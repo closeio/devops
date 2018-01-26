@@ -25,7 +25,7 @@ def init():
     root_logger.addHandler(handler)
 
 
-def render_k8s_resource(file_name, variables):
+def render_k8s_resource(file_name, variables, debug):
     """Render k8s resource files using jinga2.
 
     Args:
@@ -44,6 +44,9 @@ def render_k8s_resource(file_name, variables):
     deploy_template = jinja2.Template(deploy_string)
     deploy_template.environment.undefined = jinja2.StrictUndefined
     deploy_string = deploy_template.render(variables)
+
+    if debug:
+        logging.info('\n{}'.format(deploy_string))
 
     return yaml.load(deploy_string)
 
@@ -456,17 +459,18 @@ def wait_for_deployment(deployment, our_revision, timeout=60):
 
 
 def k8s_deploy_from_file(kube_config, manifest_filename, version, variables,
-                         timeout=240, update=True, context=None):
+                         timeout=240, update=True, context=None, debug=False):
     """Deploy to cluster from a manifest file."""
 
     logging.info('Loading manifest %s', manifest_filename)
 
-    deploy_resource = render_k8s_resource(manifest_filename, variables)
-    k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout, update, context)
+    deploy_resource = render_k8s_resource(manifest_filename, variables, debug)
+    k8s_deploy_from_manifest(kube_config, deploy_resource, version, timeout,
+                             update, context, debug)
 
 
 def k8s_deploy_from_manifest(kube_config, manifest, version, timeout=240,
-                             update=True, context=None):
+                             update=True, context=None, debug=False):
     """Deploy to cluster using provided manifest."""
 
     start_deployment = time.time()

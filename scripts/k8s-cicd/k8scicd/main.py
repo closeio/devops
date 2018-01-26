@@ -186,7 +186,7 @@ class CICDProcessor(object):
 
         k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], manifest, self.variables['VERSION'],
                                  timeout=self.get_command_timeout(settings), update=update,
-                                 context=self.kubeconfig_context)
+                                 context=self.kubeconfig_context, debug=self.debug)
 
     def command_k8s_deploy(self, service_directory, settings):
         """Deploy to k8s."""
@@ -205,7 +205,8 @@ class CICDProcessor(object):
         k8s_deploy_from_file(self.variables['KUBE_CONFIG'],
                              settings['manifest'], self.variables['VERSION'],
                              temp_vars, timeout=self.get_command_timeout(settings),
-                             update=update, context=self.kubeconfig_context)
+                             update=update, context=self.kubeconfig_context,
+                             debug=self.debug)
 
     def command_run(self, service_directory, settings):
         """Run bash script."""
@@ -309,6 +310,8 @@ class CICDProcessor(object):
                             required=False, type=int, default=240)
         parser.add_argument('-c', '--context', help='Kubeconfig context', default=None,
                             required=False)
+        parser.add_argument('-D', '--debug', help='Enable debug', required=False,
+                            action='store_true')
 
         parser.add_argument('-v', '--variable', required=False, action='append',
                             help='Format var1=value1. Multiple variables are allowed.')
@@ -322,6 +325,7 @@ class CICDProcessor(object):
         self.process_subdirs = args.subdirs
         self.kubeconfig_context = args.context
         self.default_timeout = args.timeout
+        self.debug = args.debug
         logging.info('Setting default timeout to %d', self.default_timeout)
 
         # Build variables dictionary based on variables passed on command line
@@ -357,6 +361,8 @@ class CICDProcessor(object):
         config_template = jinja2.Template(str(config))
         config_template.environment.undefined = jinja2.StrictUndefined
         config_string = config_template.render(self.variables)
+        if self.debug:
+            logging.info('\n{}'.format(config_string))
 
         return yaml.load(config_string)
 
