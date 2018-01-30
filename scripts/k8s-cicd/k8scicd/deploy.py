@@ -400,6 +400,19 @@ class K8sDeployer(object):
             time.sleep(2)
         raise RuntimeError('Timeout')
 
+    def _get_status(self, status_dict):
+        status = '  '
+        if 'replicas' in status_dict:
+            status += 'Replicas:{} '.format(status_dict['replicas'])
+        if 'availableReplicas' in status_dict:
+            status += 'Available:{} '.format(status_dict['availableReplicas'])
+        if 'unavailableReplicas' in status_dict:
+            status += 'Unavailable:{} '.format(status_dict['unavailableReplicas'])
+        if 'updatedReplicas' in status_dict:
+            status += 'Updated:{} '.format(status_dict['updatedReplicas'])
+
+        return status
+
     def _undeploy_manifest(self, manifest, version, timeout, update):
         """Delete k8s object."""
 
@@ -451,7 +464,8 @@ class K8sDeployer(object):
             try:
                 deployment.reload()
                 current_revision = deployment.annotations['deployment.kubernetes.io/revision']
-                logging.info('%s %s', deployment.obj['status'], current_revision)
+                status = self._get_status(deployment.obj['status'])
+                logging.info('%sGeneration:%s', status, current_revision)
 
                 if int(current_revision) < int(our_revision):
                     logging.info('Waiting for our deployment to start')
