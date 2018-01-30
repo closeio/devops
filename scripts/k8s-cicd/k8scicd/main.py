@@ -52,15 +52,19 @@ class CICDProcessor(object):
     def _check_docker_email_flag(self):
         """Check if docker needs email argument for login."""
 
-        args = ['docker', 'version', '-f', '{{ .Client.Version }}']
-        version = CICDProcessor._run_process(args, capture_output=True)
-        version = LooseVersion(version)
-        if version >= LooseVersion('17.06'):
-            logging.info('Newer login command supported')
-            return False
-        else:
-            logging.info('Legacy login command needed')
-            return True
+        try:
+            args = ['docker', 'version', '-f', '{{ .Client.Version }}']
+            version = CICDProcessor._run_process(args, capture_output=True)
+            version = LooseVersion(version)
+            if version >= LooseVersion('17.06'):
+                logging.info('Newer login command supported')
+                return False
+            else:
+                logging.info('Legacy login command needed')
+                return True
+        except Exception:
+                logging.info('Failed to get Docker version, assuming legacy version')
+                return True
 
     @staticmethod
     def _run_process(args, ignore_error=False, timeout=240, shell=False,
