@@ -566,7 +566,7 @@ class K8sDeployer(object):
                 self._deploy_cluster_role(manifest, version, update)
             elif kind == 'ClusterRoleBinding':
                 self._deploy_cluster_role_binding(manifest, version, update)
-            elif kind == 'Ingress':
+            elif kind == 'Ingress' or kind == 'StatefulSet':
                 self._deploy_generic_manifest(manifest, version, update)
             else:
                 raise RuntimeError('Unsupported manifest kind')
