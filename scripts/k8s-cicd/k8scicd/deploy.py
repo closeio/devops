@@ -432,6 +432,11 @@ class K8sDeployer(object):
                                           k8s_object.obj['metadata']['namespace'],
                                           k8s_object.obj['metadata']['labels']['app'],
                                           timeout)
+            elif manifest['kind'] == 'StatefulSet':
+                logging.info('Object is StatefulSet, cascading delete of Pods')
+                self._delete_pods(k8s_object.obj['metadata']['namespace'],
+                                  k8s_object.obj['metadata']['labels']['app'],
+                                  timeout)
         else:
             logging.info('Object not found')
             return
