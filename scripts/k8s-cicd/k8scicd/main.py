@@ -188,10 +188,14 @@ class CICDProcessor(object):
         else:
             update = True
 
+        temp_vars = self.variables.copy()
+        if 'vars' in settings:
+            temp_vars.update(settings['vars'])
+
         context = self.get_context(settings)
         deployer = K8sDeployer(self.fast_mode)
-        deployer.k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], manifest,
-                                          self.variables['VERSION'],
+        deployer.k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], yaml.dump(manifest),
+                                          self.variables['VERSION'], temp_vars,
                                           timeout=self.get_command_timeout(settings), update=update,
                                           context=context, debug=self.debug)
 
