@@ -537,6 +537,10 @@ class K8sDeployer(object):
         if self.fast_mode:
             return
 
+        # Wait 8 seconds so it detects the update.  Ideally this could
+        # be changed to wait until it detects the update has started.
+        time.sleep(8)
+
         start_time = datetime.datetime.now()
         while (datetime.datetime.now() - start_time).total_seconds() < timeout:
             statefulset.reload()
