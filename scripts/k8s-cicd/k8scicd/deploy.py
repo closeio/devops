@@ -233,7 +233,7 @@ class K8sDeployer(object):
 
         return deployment
 
-    def _deploy_generic_manifest(self, manifest, version, update):
+    def _deploy_generic_manifest(self, manifest, version, update, timeout):
         """Deploy generic manifest."""
 
         logging.info('Deploying generic manifest')
@@ -256,6 +256,9 @@ class K8sDeployer(object):
             k8s_object.update()
         else:
             logging.info('Not updating %s' % manifest['kind'])
+
+        if manifest['kind'] == 'StatefulSet':
+            self._wait_for_statefulset(k8s_object, timeout)
 
         return k8s_object
 
@@ -410,6 +413,18 @@ class K8sDeployer(object):
 
         return status
 
+    def _is_statefulset_updating(self, statefulset):
+        if 'currentReplicas' in statefulset.obj['status'] and \
+                statefulset.obj['spec']['replicas'] != statefulset.obj['status']['currentReplicas']:
+            return True
+
+        if 'updateRevision' in statefulset.obj['status'] \
+                and statefulset.obj['status']['updateRevision'] != \
+                statefulset.obj['status']['currentRevision']:
+            return True
+        else:
+            return False
+
     def _undeploy_manifest(self, manifest, version, timeout, update):
         """Delete k8s object."""
 
@@ -518,6 +533,33 @@ class K8sDeployer(object):
             time.sleep(1)
         raise RuntimeError('Timeout')
 
+    def _wait_for_statefulset(self, statefulset, timeout):
+        if self.fast_mode:
+            return
+
+        start_time = datetime.datetime.now()
+        while (datetime.datetime.now() - start_time).total_seconds() < timeout:
+            statefulset.reload()
+            if self._is_statefulset_updating(statefulset):
+
+                updated = statefulset.obj['status'].get('updatedReplicas', '-')
+                replicas = statefulset.obj['status'].get('replicas', '-')
+                desired = statefulset.obj['spec'].get('replicas', '-')
+                if updated != '-' and desired != '-':
+                    percent = '%.1f%%' % (float(updated) / desired * 100.0)
+                else:
+                    percent = '-'
+
+                logging.info('  Waiting for StatefulSet desired: {} updated:'
+                             ' {} replicas: {} complete: {}'
+                             .format(desired, updated, replicas, percent))
+                time.sleep(4)
+                continue
+            else:
+                return
+
+        raise RuntimeError('Timeout')
+
     def k8s_deploy_from_file(self, kube_config, manifest_filename, version, variables,
                              timeout=240, update=True, context=None, undeploy=False,
                              debug=False):
@@ -572,7 +614,7 @@ class K8sDeployer(object):
             elif kind == 'ClusterRoleBinding':
                 self._deploy_cluster_role_binding(manifest, version, update)
             elif kind == 'Ingress' or kind == 'StatefulSet':
-                self._deploy_generic_manifest(manifest, version, update)
+                self._deploy_generic_manifest(manifest, version, update, timeout)
             else:
                 raise RuntimeError('Unsupported manifest kind')
 
