@@ -92,130 +92,14 @@ class K8sDeployer(object):
             self._wait_for_object_removal(rs, timeout)
             self._delete_pods(namespace, app, timeout)
 
-    def _deploy_cluster_role(self, manifest, version, update):
-        """Deploy Service Account."""
-
-        logging.info('Deploying cluster role')
-
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-
-        role = object_class(self.api, manifest)
-
-        role.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in role.obj and 'namespace' in role.obj['metadata']:
-            self._check_namespace(role.obj['metadata']['namespace'])
-
-        if not role.exists():
-            logging.info('Creating ClusterRole')
-            role.create()
-        elif update:
-            logging.info('Updating ClusterRole')
-            role.update()
-        else:
-            logging.info('Not updating ClusterRole')
-
-        return role
-
-    def _deploy_cluster_role_binding(self, manifest, version, update):
-        """Deploy Service Account."""
-
-        logging.info('Deploying ClusterRoleBinding')
-
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-
-        role_binding = object_class(self.api, manifest)
-
-        role_binding.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in role_binding.obj and 'namespace' in role_binding.obj['metadata']:
-            self._check_namespace(role_binding.obj['metadata']['namespace'])
-
-        if not role_binding.exists():
-            logging.info('Creating ClusterRoleBinding')
-            role_binding.create()
-        elif update:
-            logging.info('Updating ClusterRoleBinding')
-            role_binding.update()
-        else:
-            logging.info('Not updating ClusterRoleBinding')
-
-        return role_binding
-
-    def _deploy_config_map(self, manifest, version, timeout, update):
-        """Deploy Config Map."""
-
-        logging.info('Deploying configmap')
-
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-        configmap = object_class(self.api, manifest)
-
-        configmap.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in configmap.obj and 'namespace' in configmap.obj['metadata']:
-            self._check_namespace(configmap.obj['metadata']['namespace'])
-
-        if not configmap.exists():
-            logging.info('Creating ConfigMap')
-            configmap.create()
-        elif update:
-            logging.info('Updating ConfigMap')
-            configmap.update()
-        else:
-            logging.info('Not updating ConfigMap')
-
-        return configmap
-
-    def _deploy_daemon_set(self, manifest, version, update):
-        """Deploy Daemon Set."""
-
-        logging.info('Deploying daemonset')
-
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-        daemon_set = object_class(self.api, manifest)
-
-        daemon_set.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in daemon_set.obj and 'namespace' in daemon_set.obj['metadata']:
-            self._check_namespace(daemon_set.obj['metadata']['namespace'])
-
-        if not daemon_set.exists():
-            logging.info('Creating DaemonSet')
-            daemon_set.create()
-        elif update:
-            logging.info('Updating DaemonSet')
-            daemon_set.update()
-        else:
-            logging.info('Not updating DaemonSet')
-
-        return daemon_set
-
-    def _deploy_deployment(self, manifest, version, timeout, update):
+    def _deploy_deployment(self, manifest, version, update, timeout):
         """Deploy Deployment."""
 
-        logging.info('Deploying deployment')
+        deployment, updated = self._deploy_generic_manifest(manifest,
+                                                            version, update,
+                                                            timeout)
 
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-        deployment = object_class(self.api, manifest)
-
-        deployment.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in deployment.obj and 'namespace' in deployment.obj['metadata']:
-            self._check_namespace(deployment.obj['metadata']['namespace'])
-
-        if not deployment.exists():
-            logging.info('Creating deployment')
-            deployment.create()
-        elif update:
-            logging.info('Updating deployment')
-            deployment.update()
-        else:
-            logging.info('Not updating deployment')
+        if not updated:
             return
 
         # We wait for deployments finish
@@ -236,7 +120,8 @@ class K8sDeployer(object):
     def _deploy_generic_manifest(self, manifest, version, update, timeout):
         """Deploy generic manifest."""
 
-        logging.info('Deploying generic manifest')
+        kind = manifest['kind']
+        logging.info('Deploying manifest')
 
         object_class = pykube.object_factory(self.api, manifest['apiVersion'],
                                              manifest['kind'])
@@ -248,119 +133,32 @@ class K8sDeployer(object):
         if 'metadata' in k8s_object.obj and 'namespace' in k8s_object.obj['metadata']:
             self._check_namespace(k8s_object.obj['metadata']['namespace'])
 
+        updated = True
         if not k8s_object.exists():
-            logging.info('Creating %s' % manifest['kind'])
+            logging.info('Creating %s' % kind)
             k8s_object.create()
         elif update:
-            logging.info('Updating %s' % manifest['kind'])
+            logging.info('Updating %s' % kind)
             k8s_object.update()
         else:
-            logging.info('Not updating %s' % manifest['kind'])
+            logging.info('Not updating %s' % kind)
+            updated = False
 
-        if manifest['kind'] == 'StatefulSet':
-            self._wait_for_statefulset(k8s_object, timeout)
+        return k8s_object, updated
 
-        return k8s_object
+    def _deploy_statefulset(self, manifest, version, update, timeout):
+        """Deploy Deployment."""
 
-    def _deploy_role(self, manifest, version, update):
-        """Deploy Service Account."""
+        statefulset, updated = self._deploy_generic_manifest(manifest,
+                                                             version, update,
+                                                             timeout)
 
-        logging.info('Deploying role')
+        if not updated:
+            return
 
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-        role = object_class(self.api, manifest)
+        self._wait_for_statefulset(statefulset, timeout)
 
-        role.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in role.obj and 'namespace' in role.obj['metadata']:
-            self._check_namespace(role.obj['metadata']['namespace'])
-
-        if not role.exists():
-            logging.info('Creating Role')
-            role.create()
-        elif update:
-            logging.info('Updating Role')
-            role.update()
-        else:
-            logging.info('Not updating Role')
-
-        return role
-
-    def _deploy_role_binding(self, manifest, version, update):
-        """Deploy Service Account."""
-
-        logging.info('Deploying RoleBinding')
-
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-        role_binding = object_class(self.api, manifest)
-
-        role_binding.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in role_binding.obj and 'namespace' in role_binding.obj['metadata']:
-            self._check_namespace(role_binding.obj['metadata']['namespace'])
-
-        if not role_binding.exists():
-            logging.info('Creating RoleBinding')
-            role_binding.create()
-        elif update:
-            logging.info('Updating RoleBinding')
-            role_binding.update()
-        else:
-            logging.info('Not updating RoleBinding')
-
-        return role_binding
-
-    def _deploy_service(self, manifest, version, timeout, update):
-        """Deploy Service."""
-
-        logging.info('Deploying service')
-
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-        service = object_class(self.api, manifest)
-
-        service.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in service.obj and 'namespace' in service.obj['metadata']:
-            self._check_namespace(service.obj['metadata']['namespace'])
-
-        if not service.exists():
-            logging.info('Creating Service')
-            service.create()
-        elif update:
-            logging.info('Updating Service')
-            service.update()
-        else:
-            logging.info('Not updating Service')
-
-        return service
-
-    def _deploy_service_account(self, manifest, version, update):
-        """Deploy Service Account."""
-
-        logging.info('Deploying service account')
-
-        object_class = pykube.object_factory(self.api, manifest['apiVersion'],
-                                             manifest['kind'])
-        service_account = object_class(self.api, manifest)
-
-        service_account.annotations['kubernetes.io/change-cause'] = 'Deploying version %s' % version
-
-        if 'metadata' in service_account.obj and 'namespace' in service_account.obj['metadata']:
-            self._check_namespace(service_account.obj['metadata']['namespace'])
-
-        if not service_account.exists():
-            logging.info('Creating ServiceAccount')
-            service_account.create()
-        elif update:
-            logging.info('Updating ServiceAccount')
-            service_account.update()
-        else:
-            logging.info('Not updating ServiceAccount')
-
-        return service_account
+        return statefulset
 
     def _get_revision(self, app_label, version, timeout=60, namespace='default'):
         """Poll k8s cluster to get deployment revision number.
@@ -425,7 +223,7 @@ class K8sDeployer(object):
         else:
             return False
 
-    def _undeploy_manifest(self, manifest, version, timeout, update):
+    def _undeploy_manifest(self, manifest, version, update, timeout):
         """Delete k8s object."""
 
         logging.info('Deleting k8s object')
@@ -597,30 +395,14 @@ class K8sDeployer(object):
         kind = manifest['kind']
 
         if undeploy:
-            self._undeploy_manifest(manifest, version, timeout, update)
+            self._undeploy_manifest(manifest, version, update, timeout)
         else:
             if kind == 'Deployment':
-                self._deploy_deployment(manifest, version, timeout, update)
-            elif kind == 'Service':
-                self._deploy_service(manifest, version, timeout, update)
-            elif kind == 'ConfigMap':
-                self._deploy_config_map(manifest, version, timeout, update)
-            elif kind == 'ServiceAccount':
-                self._deploy_service_account(manifest, version, update)
-            elif kind == 'DaemonSet':
-                self._deploy_daemon_set(manifest, version, update)
-            elif kind == 'Role':
-                self._deploy_role(manifest, version, update)
-            elif kind == 'RoleBinding':
-                self._deploy_role_binding(manifest, version, update)
-            elif kind == 'ClusterRole':
-                self._deploy_cluster_role(manifest, version, update)
-            elif kind == 'ClusterRoleBinding':
-                self._deploy_cluster_role_binding(manifest, version, update)
-            elif kind == 'Ingress' or kind == 'StatefulSet':
-                self._deploy_generic_manifest(manifest, version, update, timeout)
+                self._deploy_deployment(manifest, version, update, timeout)
+            if kind == 'StatefulSet':
+                self._deploy_statefulset(manifest, version, update, timeout)
             else:
-                raise RuntimeError('Unsupported manifest kind')
+                self._deploy_generic_manifest(manifest, version, update, timeout)
 
         end_deployment = time.time()
         logging.info('Deploying complete. %ds', end_deployment - start_deployment)

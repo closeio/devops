@@ -450,6 +450,10 @@ class CICDProcessor(object):
         with open(deploy_file, 'r') as config_file:
             config_yaml = self.render_config(config_file.read())
 
+        if 'phases' not in config_yaml:
+            logging.debug('Phase section not in cicd file')
+            return
+
         if phase not in config_yaml['phases']:
             logging.debug('Phase not in cicd file')
             return
