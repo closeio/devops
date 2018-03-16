@@ -9,5 +9,5 @@ test_node=`kubectl get nodes -o json | jq -r .items[1].metadata.name`
 echo "Testing ${cluster_ip}:${node_port} from ${test_node}"
 
 # These should fail if nginx deployment wasn't successful
-ssh ${test_node} "curl -s http://${cluster_ip}/index.html" | grep 'Hello world'
-ssh ${test_node} "curl -s http://${cluster_ip}/data2.txt" | grep $1
+curl -s http://${cluster_ip}/index.html | grep 'Hello world'
+curl -s http://${cluster_ip}/data2.txt | grep $1
