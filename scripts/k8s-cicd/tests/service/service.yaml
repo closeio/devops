@@ -1,0 +1,10 @@
+config:
+  order: 80
+phases:
+  test:
+    - k8s_deploy:
+        manifest: nginx-service-np.yaml
+    - script:
+        name: test_nginx.sh
+        args:
+          - {{ VERSION }}

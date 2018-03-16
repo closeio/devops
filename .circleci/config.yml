@@ -47,6 +47,14 @@ jobs:
       - run:
           command: |
             sudo kubectl cluster-info
+      - run:
+          command: |
+            sudo apt-get update
+            sudo apt-get install python-all-dev
+            sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
+      - run:
+          command: |
+            sudo /home/circleci/project/scripts/k8s-cicd/k8scicd.sh -p test -d /home/circleci/project/scripts/k8s-cicd/tests/
 
 workflows:
   version: 2

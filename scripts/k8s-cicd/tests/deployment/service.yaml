@@ -1,0 +1,8 @@
+config:
+  order: 75
+phases:
+  test:
+    - k8s_deploy:
+        manifest: nginx-deployment.yaml
+        vars:
+          replicas: 2

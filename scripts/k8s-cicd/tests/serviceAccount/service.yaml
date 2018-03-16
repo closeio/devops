@@ -1,0 +1,6 @@
+config:
+  order: 60
+phases:
+  test:
+    - k8s_deploy:
+        manifest: testing-service-account.yaml

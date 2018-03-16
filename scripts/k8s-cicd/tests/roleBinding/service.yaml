@@ -1,0 +1,6 @@
+config:
+  order: 62
+phases:
+  test:
+    - k8s_deploy:
+        manifest: testing-rolebinding.yaml

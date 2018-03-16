@@ -1,0 +1,8 @@
+config:
+  order: 120
+phases:
+  test:
+    - k8s_deploy:
+        manifest: testing-statefulset.yaml
+        vars:
+          replicas: 2

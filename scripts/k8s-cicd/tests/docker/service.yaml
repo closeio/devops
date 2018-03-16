@@ -1,0 +1,14 @@
+config:
+  order: 25
+phases:
+  test:
+    # This image isn't used in any other tests right now.  We just build the image
+    - docker:
+        timeout: 1200
+        args:
+          - build
+          - -f
+          - Dockerfile
+          - -t
+          - testing-nginx:{{ VERSION }}
+          - .
