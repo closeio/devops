@@ -1,0 +1,21 @@
+apiVersion: apps/v1beta2
+kind: DaemonSet
+metadata:
+  name: testing-daemonset
+  namespace: testing
+spec:
+  selector:
+    matchLabels:
+      app: testing-daemonset
+  template:
+    metadata:
+      labels:
+        app: testing-daemonset
+    spec:
+      containers:
+      - name: testing-daemonset
+        image: alpine:3.6
+        args:
+          - /usr/bin/tail
+          - -f
+          - /dev/null

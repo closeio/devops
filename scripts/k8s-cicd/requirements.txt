@@ -17,7 +17,7 @@ oauthlib==2.0.6
 packaging==16.8
 pyasn1==0.4.2
 pyasn1-modules==0.2.1
--e git+https://git@github.com/kelproject/pykube.git@e8a46298a592ad9037587afb707ac75b3114eff9#egg=pykube
+pykube==0.16a1
 pyparsing==2.2.0
 python-dateutil==2.5.3
 pytz==2017.3

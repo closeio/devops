@@ -1,0 +1,7 @@
+config:
+  order: 90
+#phases:
+  # This will trigger alb-controller errors so disabling for now
+  #test:
+  #  - k8s_deploy:
+  #      manifest: nginx-ingress.yaml

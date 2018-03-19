@@ -1,0 +1,20 @@
+config:
+  order: 50
+phases:
+  test:
+    - k8s_config_map:
+        name: home-page
+        namespace: testing
+        vars:
+          text: Hello world
+        data:
+          - file:
+              key: index.html
+              name: helloWorld.html
+    - k8s_config_map:
+        name: data-page
+        namespace: testing
+        data:
+          - value:
+              key: data.txt
+              data: "{{ VERSION }}"

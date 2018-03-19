@@ -13,7 +13,7 @@ from distutils.version import LooseVersion
 
 import boto3
 
-from deploy import k8s_deploy_from_file, k8s_deploy_from_manifest
+from deploy import K8sDeployer
 
 from ecr_cleaner import prune_ecr
 
@@ -52,15 +52,19 @@ class CICDProcessor(object):
     def _check_docker_email_flag(self):
         """Check if docker needs email argument for login."""
 
-        args = ['docker', 'version', '-f', '{{ .Client.Version }}']
-        version = CICDProcessor._run_process(args, capture_output=True)
-        version = LooseVersion(version)
-        if version >= LooseVersion('17.06'):
-            logging.info('Newer login command supported')
-            return False
-        else:
-            logging.info('Legacy login command needed')
-            return True
+        try:
+            args = ['docker', 'version', '-f', '{{ .Client.Version }}']
+            version = CICDProcessor._run_process(args, capture_output=True)
+            version = LooseVersion(version)
+            if version >= LooseVersion('17.06'):
+                logging.info('Newer login command supported')
+                return False
+            else:
+                logging.info('Legacy login command needed')
+                return True
+        except Exception:
+                logging.info('Failed to get Docker version, assuming legacy version')
+                return True
 
     @staticmethod
     def _run_process(args, ignore_error=False, timeout=240, shell=False,
@@ -184,9 +188,30 @@ class CICDProcessor(object):
         else:
             update = True
 
-        k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], manifest, self.variables['VERSION'],
-                                 timeout=self.get_command_timeout(settings), update=update,
-                                 context=self.kubeconfig_context)
+        temp_vars = self.variables.copy()
+        if 'vars' in settings:
+            temp_vars.update(settings['vars'])
+
+        context = self.get_context(settings)
+        deployer = K8sDeployer(self.fast_mode)
+        deployer.k8s_deploy_from_manifest(self.variables['KUBE_CONFIG'], yaml.dump(manifest),
+                                          self.variables['VERSION'], temp_vars,
+                                          timeout=self.get_command_timeout(settings), update=update,
+                                          context=context, debug=self.debug)
+
+    def get_context(self, settings):
+        """Determine k8s config context."""
+
+        # If context specified on CLI it overrides everything
+        # Otherwise check if it's defined in the service file
+        if self.kubeconfig_context:
+            context = self.kubeconfig_context
+        elif 'context' in settings:
+            context = settings['context']
+        else:
+            context = None
+
+        return context
 
     def command_k8s_deploy(self, service_directory, settings):
         """Deploy to k8s."""
@@ -202,10 +227,31 @@ class CICDProcessor(object):
         if 'vars' in settings:
             temp_vars.update(settings['vars'])
 
-        k8s_deploy_from_file(self.variables['KUBE_CONFIG'],
-                             settings['manifest'], self.variables['VERSION'],
-                             temp_vars, timeout=self.get_command_timeout(settings),
-                             update=update, context=self.kubeconfig_context)
+        context = self.get_context(settings)
+        deployer = K8sDeployer(self.fast_mode)
+        deployer.k8s_deploy_from_file(self.variables['KUBE_CONFIG'],
+                                      settings['manifest'], self.variables['VERSION'],
+                                      temp_vars, timeout=self.get_command_timeout(settings),
+                                      update=update, context=context,
+                                      debug=self.debug)
+
+    def command_k8s_undeploy(self, service_directory, settings):
+        """Undeploy command."""
+
+        update = False
+
+        # Add the config file settings to the variables list,
+        # these will override existing vars if they exist
+        temp_vars = self.variables.copy()
+        if 'vars' in settings:
+            temp_vars.update(settings['vars'])
+
+        deployer = K8sDeployer(self.fast_mode)
+        deployer.k8s_deploy_from_file(self.variables['KUBE_CONFIG'],
+                                      settings['manifest'], self.variables['VERSION'],
+                                      temp_vars, timeout=self.get_command_timeout(settings),
+                                      update=update, context=self.kubeconfig_context,
+                                      undeploy=True, debug=self.debug)
 
     def command_run(self, service_directory, settings):
         """Run bash script."""
@@ -261,13 +307,14 @@ class CICDProcessor(object):
         dir_list = os.listdir(self.directory)
 
         service_files = []
-
+        logging.info('Getting service files')
         # Look in each subdirectory for a services yaml file
         for f in dir_list:
             service_directory = self.directory + '/' + f
             if os.path.isdir(service_directory):
                 deploy_file = service_directory + '/' + self.filename
                 if os.path.isfile(deploy_file):
+                    logging.info('  Checking: %s', deploy_file)
                     service_files.append((deploy_file, self.get_service_order(deploy_file)))
 
         # Sort service files based on order number
@@ -309,6 +356,10 @@ class CICDProcessor(object):
                             required=False, type=int, default=240)
         parser.add_argument('-c', '--context', help='Kubeconfig context', default=None,
                             required=False)
+        parser.add_argument('-D', '--debug', help='Enable debug', required=False,
+                            action='store_true')
+        parser.add_argument('-F', '--fast', help='Fast mode, no waiting', required=False,
+                            action='store_true')
 
         parser.add_argument('-v', '--variable', required=False, action='append',
                             help='Format var1=value1. Multiple variables are allowed.')
@@ -322,6 +373,8 @@ class CICDProcessor(object):
         self.process_subdirs = args.subdirs
         self.kubeconfig_context = args.context
         self.default_timeout = args.timeout
+        self.debug = args.debug
+        self.fast_mode = args.fast
         logging.info('Setting default timeout to %d', self.default_timeout)
 
         # Build variables dictionary based on variables passed on command line
@@ -357,6 +410,8 @@ class CICDProcessor(object):
         config_template = jinja2.Template(str(config))
         config_template.environment.undefined = jinja2.StrictUndefined
         config_string = config_template.render(self.variables)
+        if self.debug:
+            logging.info('\n{}'.format(config_string))
 
         return yaml.load(config_string)
 
@@ -395,6 +450,10 @@ class CICDProcessor(object):
         with open(deploy_file, 'r') as config_file:
             config_yaml = self.render_config(config_file.read())
 
+        if 'phases' not in config_yaml:
+            logging.debug('Phase section not in cicd file')
+            return
+
         if phase not in config_yaml['phases']:
             logging.debug('Phase not in cicd file')
             return
@@ -425,6 +484,7 @@ class CICDProcessor(object):
             'ecr_login': self.command_ecr_login,
             'k8s_config_map': self.command_k8s_config_map,
             'k8s_deploy': self.command_k8s_deploy,
+            'k8s_undeploy': self.command_k8s_undeploy,
             'prune_ecr': self.command_prune_ecr,
             'run': self.command_run,
             'script': self.command_script
@@ -437,6 +497,10 @@ class CICDProcessor(object):
         else:
             logging.error('Unknown command:%s', command)
             raise ProcessingError('Unknown command %s', command)
+
+        if 'sleep' in section:
+            logging.info('Sleeping: %s', str(section['sleep']))
+            time.sleep(float(section['sleep']))
 
     def set_service_variable_defaults(self, deploy_file):
         """Set service variable defaults."""
@@ -457,11 +521,12 @@ def run():
     """Run CICD phase."""
 
     init()
+    start_time = time.time()
     logging.info('Starting CICD processor')
     processor = CICDProcessor()
     processor.run()
 
-    logging.info('Finished CICD processor')
+    logging.info('Finished CICD processor in %ds', time.time() - start_time)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,4 @@
+phases:
+  test:
+    - k8s_deploy:
+        manifest: testing-daemonset.yaml

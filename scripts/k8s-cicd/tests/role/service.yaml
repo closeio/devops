@@ -1,0 +1,6 @@
+config:
+  order: 61
+phases:
+  test:
+    - k8s_deploy:
+        manifest: testing-role.yaml

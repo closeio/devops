@@ -1,0 +1,31 @@
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  labels:
+    app: testing-statefulset
+  name: testing-statefulset
+  namespace: testing
+spec:
+  serviceName: testing-statefulset
+  replicas: {{ replicas }}
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: testing-statefulset
+  template:
+    metadata:
+      labels:
+        app: testing-statefulset
+      annotations:
+        version: '{{ VERSION }}'
+        prometheus.io/scrape: "false"
+    spec:
+      terminationGracePeriodSeconds: 300
+      containers:
+      - name: testing-statefulset
+        image: alpine:3.6
+        args:
+          - /usr/bin/tail
+          - -f
+          - /dev/null

@@ -1,0 +1,8 @@
+config:
+  order: 999
+phases:
+  test:
+    - run:
+        command: echo
+        args:
+          - "Run: \"kubectl delete namespace testing\" to cleanup and\n\"kubectl get pods --all-namespaces | grep testing\" to make sure all pods are removed\n"
