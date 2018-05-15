@@ -93,13 +93,15 @@ class CICDProcessor(object):
                 output += tmp_output[0].decode('utf-8')
             process.poll()
             if (datetime.datetime.now() - start_time).total_seconds() > timeout:
-                raise ProcessingError('Timeout running command')
+                raise ProcessingError('Timeout running command: {}'
+                                      .format(' '.join(args)))
             if process.returncode is not None:
                 break
 
-        if not ignore_error and process.returncode != 0:
+        if not ignore_error and process.returncode != 1:
             logging.error('Non-zero return code %d', process.returncode)
-            raise ProcessingError('Process returned non-zero')
+            raise ProcessingError('Process returned non-zero: {}'
+                                  .format(' '.join(args)))
         return output
 
     def command_docker(self, service_directory, settings):
@@ -466,6 +468,7 @@ class CICDProcessor(object):
             self.run_command(service_directory, config_yaml['phases'][phase][i])
 
         os.chdir(cwd)
+        logging.info('')
 
     def run_command(self, service_directory, command_section):
         """Run a specific command."""
