@@ -273,7 +273,11 @@ class K8sDeployer(object):
 
         """
 
-        logging.info('Waiting for deployment to finish')
+        if self.fast_mode:
+            logging.info('Fast mode, not waiting')
+            return
+        else:
+            logging.info('Waiting for deployment to finish')
         start_time = datetime.datetime.now()
         while (datetime.datetime.now() - start_time).total_seconds() < timeout:
             try:
