@@ -111,8 +111,7 @@ class K8sDeployer(object):
             namespace = 'default'
 
         revision = self._get_revision(app_label, version, timeout, namespace)
-        # Hack to make sure deployment has a chance to start - Need a better way to detect this
-        time.sleep(3)
+
         self._wait_for_deployment(deployment, revision, timeout)
 
         return deployment
@@ -278,6 +277,10 @@ class K8sDeployer(object):
             return
         else:
             logging.info('Waiting for deployment to finish')
+
+        # Hack to make sure deployment has a chance to start - Need a better way to detect this
+        time.sleep(3)
+
         start_time = datetime.datetime.now()
         while (datetime.datetime.now() - start_time).total_seconds() < timeout:
             try:
