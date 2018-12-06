@@ -67,13 +67,9 @@ jobs:
             kubectl cluster-info
             kubectl get po --all-namespaces
       - run:
-          command: |
-            sudo apt-get update
-            sleep 30
-      - run:
           name: install python dependencies
           command: |
-            sudo apt-get install python-all-dev
+            sudo apt-get update && sudo apt-get install python-all-dev
             sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
             sudo pip install ipaddress
       - run:
