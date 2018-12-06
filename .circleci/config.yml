@@ -72,10 +72,10 @@ jobs:
             sudo apt-get update
             sudo systemctl stop apt-daily.service
             sudo systemctl kill --kill-who=all apt-daily.service
-            while ! (sudo systemctl list-units --all apt-daily.service | fgrep -q dead); do sleep 1; done
       - run:
           name: install python dependencies
           command: |
+            sudo rm -f /var/lib/dpkg/lock
             sudo apt-get install python-all-dev
             sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
             sudo pip install ipaddress
