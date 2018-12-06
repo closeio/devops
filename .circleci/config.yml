@@ -49,7 +49,7 @@ jobs:
             sudo minikube config set WantReportErrorPrompt false
       - run:
           command: |
-            sudo -E minikube start --vm-driver=none --cpus 2 --memory 2048 --kubernetes-version=${K8S_VERSION} &> $HOME/minikube.log 2>&1 < /dev/null
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 2048 --kubernetes-version=${K8S_VERSION}
       - run:
           command: |
             sudo minikube update-context
@@ -69,7 +69,7 @@ jobs:
       - run:
           command: |
             sudo apt-get update
-            sleep 10
+            sleep 30
       - run:
           name: install python dependencies
           command: |
