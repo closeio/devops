@@ -26,7 +26,7 @@ jobs:
     machine:
       image: circleci/classic:201808-01
     environment:
-      K8S_VERSION: v1.10.0
+      K8S_VERSION: v1.10.11
       KUBECONFIG: /home/circleci/.kube/config
       MINIKUBE_VERSION: v0.30.0
       MINIKUBE_WANTUPDATENOTIFICATION: false
@@ -69,6 +69,10 @@ jobs:
       - run:
           command: |
             sudo apt-get update
+            sleep 10
+      - run:
+          name: install python dependencies
+          command: |
             sudo apt-get install python-all-dev
             sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
             sudo pip install ipaddress
