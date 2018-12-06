@@ -76,6 +76,7 @@ jobs:
           name: install python dependencies
           command: |
             sudo rm -f /var/lib/dpkg/lock
+            sudo dpkg --configure a
             sudo apt-get install python-all-dev
             sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
             sudo pip install ipaddress
