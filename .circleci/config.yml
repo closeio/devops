@@ -4,14 +4,6 @@ jobs:
     docker:
       - image: closeio/circle_ubuntu:20170824145424
     working_directory: /home/circle/devops
-    environment:
-      K8S_VERSION: v1.10.0
-      KUBECONFIG: /home/circleci/.kube/config
-      MINIKUBE_VERSION: v0.30.0
-      MINIKUBE_WANTUPDATENOTIFICATION: false
-      MINIKUBE_WANTREPORTERRORPROMPT: false
-      MINIKUBE_HOME: /home/circleci
-      CHANGE_MINIKUBE_NONE_USER: true
     steps:
       - checkout
 
@@ -31,8 +23,15 @@ jobs:
           name: Test - Flake8
           command: cd ~/devops && source ~/virtualenvs/tests/bin/activate && flake8
   minikube-testing:
-    machine: true
+    machine:
+      image: circleci/classic:201808-01
     environment:
+      K8S_VERSION: v1.10.0
+      KUBECONFIG: /home/circleci/.kube/config
+      MINIKUBE_VERSION: v0.30.0
+      MINIKUBE_WANTUPDATENOTIFICATION: false
+      MINIKUBE_WANTREPORTERRORPROMPT: false
+      MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
     steps:
       - checkout
