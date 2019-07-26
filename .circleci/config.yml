@@ -23,24 +23,33 @@ jobs:
           name: Test - Flake8
           command: cd ~/devops && source ~/virtualenvs/tests/bin/activate && flake8
   minikube-testing:
-    machine: true
+    machine:
+      image: circleci/classic:201808-01
     environment:
+      K8S_VERSION: v1.10.11
+      KUBECONFIG: /home/circleci/.kube/config
+      MINIKUBE_VERSION: v0.30.0
+      MINIKUBE_WANTUPDATENOTIFICATION: false
+      MINIKUBE_WANTREPORTERRORPROMPT: false
+      MINIKUBE_HOME: /home/circleci
       CHANGE_MINIKUBE_NONE_USER: true
     steps:
       - checkout
       # Using minikube steps from https://github.com/gavinzhou/ci-minikube
       - run:
           command: |
-            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.8.4/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/${K8S_VERSION}/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+            mkdir -p ${HOME}/.kube
+            touch ${HOME}/.kube/config
       - run:
           command: |
-            curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.25.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+            curl -Lo minikube https://github.com/kubernetes/minikube/releases/download/${MINIKUBE_VERSION}/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
       - run:
           command: |
             sudo minikube config set WantReportErrorPrompt false
       - run:
           command: |
-            sudo minikube start --vm-driver=none --kubernetes-version v1.9.0
+            sudo -E minikube start --vm-driver=none --cpus 2 --memory 2048 --kubernetes-version=${K8S_VERSION}
       - run:
           command: |
             sudo minikube update-context
@@ -48,11 +57,27 @@ jobs:
           command: |
             JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until sudo kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
       - run:
+          name: fix RBAC
           command: |
-            sudo kubectl cluster-info
+            # make default account cluster-admin
+            kubectl create clusterrolebinding add-on-cluster-admin --clusterrole cluster-admin --serviceaccount=kube-system:default
       - run:
+          name: dump cluster-info
+          command: |
+            kubectl cluster-info
+            kubectl get po --all-namespaces
+      - run:
+          name: update apt
           command: |
             sudo apt-get update
+            sudo systemctl stop apt-daily.service
+            sudo systemctl kill --kill-who=all apt-daily.service
+
+      - run:
+          name: install python dependencies
+          command: |
+            sudo rm -f /var/lib/dpkg/lock
+            sudo dpkg --configure -a
             sudo apt-get install python-all-dev
             sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
             sudo pip install ipaddress
