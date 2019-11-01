@@ -56,7 +56,7 @@ def get_size(client, key, key_type):
 @click.option('--host', required=True)
 @click.option('--port', type=click.INT, default=6379)
 @click.option('--db', type=click.INT, default=0)
-@click.option('--delay', type=click.FLOAT, default=0.001)
+@click.option('--delay', type=click.FLOAT, default=0.1)
 @click.option('--print', 'print_it', is_flag=True)
 def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
     """Run scan."""
