@@ -41,6 +41,13 @@ def get_size(client, key, key_type):
 @click.command()
 @click.option('--file', 'file_name', default='redis-stats.log')
 @click.option('--match', default=None)
+@click.option(
+    '--ttl',
+    'set_ttl',
+    default=None,
+    type=click.INT,
+    help="Set TTL if one isn't already set (-1 will remove TTL)",
+)
 @click.option('--host', required=True)
 @click.option('--port', type=click.INT, default=6379)
 @click.option('--db', type=click.INT, default=0)
@@ -70,7 +77,16 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
             # keys that don't have an expiration.
             ttl = client.ttl(key)
 
-            line = '%s %s %s %d' % (key, key_type, ttl, size,)
+            new_ttl = None
+            if set_ttl == -1:
+                client.persist(key)
+                new_ttl = -1
+            elif set_ttl is not None and (ttl == -1 or ttl is None):
+                # Only change TTLs for keys with no TTL
+                client.expire(key, set_ttl)
+                new_ttl = set_ttl
+
+            line = '%s %s %s %s %d' % (key, key_type, ttl, new_ttl, size,)
             log_file.write(line + '\n')
             if print_it:
                 print(line)
