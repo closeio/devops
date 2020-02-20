@@ -22,47 +22,47 @@ jobs:
       - run:
           name: Test - Flake8
           command: cd ~/devops && source ~/virtualenvs/tests/bin/activate && flake8
-  minikube-testing:
-    machine: true
-    environment:
-      CHANGE_MINIKUBE_NONE_USER: true
-    steps:
-      - checkout
-      # Using minikube steps from https://github.com/gavinzhou/ci-minikube
-      - run:
-          command: |
-            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.8.4/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
-      - run:
-          command: |
-            curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.25.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
-      - run:
-          command: |
-            sudo minikube config set WantReportErrorPrompt false
-      - run:
-          command: |
-            sudo minikube start --vm-driver=none --kubernetes-version v1.9.0
-      - run:
-          command: |
-            sudo minikube update-context
-      - run:
-          command: |
-            JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until sudo kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
-      - run:
-          command: |
-            sudo kubectl cluster-info
-      - run:
-          command: |
-            sudo apt-get update
-            sudo apt-get install python-all-dev
-            sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
-            sudo pip install ipaddress
-      - run:
-          command: |
-            sudo /home/circleci/project/scripts/k8s-cicd/k8scicd.sh -p test -d /home/circleci/project/scripts/k8s-cicd/tests/ -s
+#  minikube-testing:
+#    machine: true
+#    environment:
+#      CHANGE_MINIKUBE_NONE_USER: true
+#    steps:
+#      - checkout
+#      # Using minikube steps from https://github.com/gavinzhou/ci-minikube
+#      - run:
+#          command: |
+#            curl -Lo kubectl https://storage.googleapis.com/kubernetes-release/release/v1.8.4/bin/linux/amd64/kubectl && chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+#      - run:
+#          command: |
+#            curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.25.0/minikube-linux-amd64 && chmod +x minikube && sudo mv minikube /usr/local/bin/
+#      - run:
+#          command: |
+#            sudo minikube config set WantReportErrorPrompt false
+#      - run:
+#          command: |
+#            sudo minikube start --vm-driver=none --kubernetes-version v1.9.0
+#      - run:
+#          command: |
+#            sudo minikube update-context
+#      - run:
+#          command: |
+#            JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until sudo kubectl get nodes -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1; done
+#      - run:
+#          command: |
+#            sudo kubectl cluster-info
+#      - run:
+#          command: |
+#            sudo apt-get update
+#            sudo apt-get install python-all-dev
+#            sudo pip install --no-deps -r /home/circleci/project/scripts/k8s-cicd/requirements.txt
+#            sudo pip install ipaddress
+#      - run:
+#          command: |
+#            sudo /home/circleci/project/scripts/k8s-cicd/k8scicd.sh -p test -d /home/circleci/project/scripts/k8s-cicd/tests/ -s
 
 workflows:
   version: 2
   workflow:
     jobs:
       - test
-      - minikube-testing
+#      - minikube-testing

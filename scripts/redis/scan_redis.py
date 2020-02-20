@@ -1,15 +1,18 @@
-"""Safely scan entire Redis instance and report key stats."""
+#!/usr/bin/env python
+"""
+Safely scan Redis instance and report key stats.
+
+Can also set the TTL for keys to facilitate removing data.
+"""
+from __future__ import absolute_import, print_function
+
 import signal
+import sys
 import time
 
+import click
+
 import redis
-
-
-HOSTNAME = '127.0.0.1'
-PORT = 6379
-DB = 0
-
-DELAY = .01  # Sleep a little to not impact redis performance
 
 loop = True
 
@@ -40,16 +43,34 @@ def get_size(client, key, key_type):
     return size
 
 
-def run():
+@click.command()
+@click.option('--file', 'file_name', default='redis-stats.log')
+@click.option('--match', default=None)
+@click.option(
+    '--ttl',
+    'set_ttl',
+    default=None,
+    type=click.INT,
+    help="Set TTL if one isn't already set (-1 will remove TTL)",
+)
+@click.option('--host', required=True)
+@click.option('--port', type=click.INT, default=6379)
+@click.option('--db', type=click.INT, default=0)
+@click.option('--delay', type=click.FLOAT, default=0.1)
+@click.option('--print', 'print_it', is_flag=True)
+def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
     """Run scan."""
 
-    client = redis.Redis(host=HOSTNAME, port=PORT, db=DB)
+    if set_ttl is not None and match is None:
+        print('You must specify match when setting TTLs!')
+        sys.exit(1)
 
-    print 'Scanning redis keys'
+    client = redis.Redis(host=host, port=port, db=db)
+
+    print('Scanning redis keys with match: %s\n' % match)
     cursor = '0'
-    match = None
 
-    log_file = file('redis-stats.log', 'w')
+    log_file = file(file_name, 'w')
 
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -60,10 +81,29 @@ def run():
         for key in data:
             key_type = client.type(key)
             size = get_size(client, key, key_type)
+
             ttl = client.ttl(key)
-            log_file.write('%s %s %s %d\n' % (key, key_type, str(ttl), size))
+            # ttl() returns None in redis 2.x and -1 in redis 3.x for
+            # keys that don't have an expiration. Normalize it here.
+            if ttl is None:
+                ttl = -1
+
+            new_ttl = None
+            if set_ttl == -1:
+                client.persist(key)
+                new_ttl = -1
+            elif set_ttl is not None and ttl == -1:
+                # Only change TTLs for keys with no TTL
+                client.expire(key, set_ttl)
+                new_ttl = set_ttl
+
+            line = '%s %s %s %s %d' % (key, key_type, ttl, new_ttl, size,)
+            log_file.write(line + '\n')
+            if print_it:
+                print(line)
+
         log_file.flush()
-        time.sleep(DELAY)
+        time.sleep(delay)
 
     log_file.close()
 
