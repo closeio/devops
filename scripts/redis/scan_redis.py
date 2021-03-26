@@ -85,11 +85,6 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
                 size = get_size(client, key, key_type)
 
                 ttl = client.ttl(key)
-                # ttl() returns None in redis 2.x and -1 in redis 3.x for
-                # keys that don't have an expiration. Normalize it here.
-                if ttl is None:
-                    ttl = -1
-
                 new_ttl = None
                 if set_ttl == -1:
                     if ttl != -1:
