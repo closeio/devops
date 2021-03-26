@@ -4,8 +4,6 @@ Safely scan Redis instance and report key stats.
 
 Can also set the TTL for keys to facilitate removing data.
 """
-from __future__ import absolute_import, print_function
-
 import signal
 import sys
 import time
