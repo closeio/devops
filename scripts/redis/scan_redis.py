@@ -90,7 +90,8 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
 
             new_ttl = None
             if set_ttl == -1:
-                client.persist(key)
+                if ttl != -1:
+                    client.persist(key)
                 new_ttl = -1
             elif set_ttl is not None and ttl == -1:
                 # Only change TTLs for keys with no TTL
