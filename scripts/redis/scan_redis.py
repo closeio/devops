@@ -98,7 +98,7 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
                 client.expire(key, set_ttl)
                 new_ttl = set_ttl
 
-            line = '%s %s %s %s %d' % (key, key_type, ttl, new_ttl, size,)
+            line = f'{key} {key_type} {ttl} {new_ttl} {size}'
             log_file.write(line + '\n')
             if print_it:
                 print(line)
