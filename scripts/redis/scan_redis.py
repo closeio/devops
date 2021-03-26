@@ -70,43 +70,39 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
     print('Scanning redis keys with match: %s\n' % match)
     cursor = '0'
 
-    log_file = file(file_name, 'w')
-
     signal.signal(signal.SIGINT, signal_handler)
 
-    while cursor != 0 and loop:
+    with open(file_name, 'w') as log_file:
+        while cursor != 0 and loop:
+            cursor, data = client.scan(cursor=cursor, match=match)
 
-        cursor, data = client.scan(cursor=cursor, match=match)
+            for key in data:
+                key_type = client.type(key)
+                size = get_size(client, key, key_type)
 
-        for key in data:
-            key_type = client.type(key)
-            size = get_size(client, key, key_type)
+                ttl = client.ttl(key)
+                # ttl() returns None in redis 2.x and -1 in redis 3.x for
+                # keys that don't have an expiration. Normalize it here.
+                if ttl is None:
+                    ttl = -1
 
-            ttl = client.ttl(key)
-            # ttl() returns None in redis 2.x and -1 in redis 3.x for
-            # keys that don't have an expiration. Normalize it here.
-            if ttl is None:
-                ttl = -1
+                new_ttl = None
+                if set_ttl == -1:
+                    if ttl != -1:
+                        client.persist(key)
+                    new_ttl = -1
+                elif set_ttl is not None and ttl == -1:
+                    # Only change TTLs for keys with no TTL
+                    client.expire(key, set_ttl)
+                    new_ttl = set_ttl
 
-            new_ttl = None
-            if set_ttl == -1:
-                if ttl != -1:
-                    client.persist(key)
-                new_ttl = -1
-            elif set_ttl is not None and ttl == -1:
-                # Only change TTLs for keys with no TTL
-                client.expire(key, set_ttl)
-                new_ttl = set_ttl
+                line = f'{key} {key_type} {ttl} {new_ttl} {size}'
+                log_file.write(line + '\n')
+                if print_it:
+                    print(line)
 
-            line = f'{key} {key_type} {ttl} {new_ttl} {size}'
-            log_file.write(line + '\n')
-            if print_it:
-                print(line)
-
-        log_file.flush()
-        time.sleep(delay)
-
-    log_file.close()
+            log_file.flush()
+            time.sleep(delay)
 
 
 if __name__ == '__main__':
