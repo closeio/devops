@@ -72,6 +72,9 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
     else:
         print('Scanning all redis keys\n')
 
+    # This is a string because we want the `while` below to run, and the string
+    # will be correctly interpreted by `client.scan` as a request for a new
+    # cursor.
     cursor = '0'
 
     signal.signal(signal.SIGINT, signal_handler)
