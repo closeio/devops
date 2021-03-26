@@ -9,7 +9,6 @@ import sys
 import time
 
 import click
-
 import redis
 
 loop = True
