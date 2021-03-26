@@ -2,26 +2,19 @@ version: 2
 jobs:
   test:
     docker:
-      - image: closeio/circle_ubuntu:20170824145424
-    working_directory: /home/circle/devops
+      - image: circleci/python:3.6
+    working_directory: /home/circleci/devops
     steps:
       - checkout
 
       - run:
-          name: Setup - Create virtualenv directory
-          command: mkdir ~/virtualenvs
-
-      - run:
-          name: Setup - Create test virtualenv
-          command: if [ ! -d ~/virtualenvs/tests ]; then  virtualenv ~/virtualenvs/tests; fi
-
-      - run:
-          name: Setup - Install test requirements
-          command: source ~/virtualenvs/tests/bin/activate && pip install -U pip && pip install --exists-action=s --no-deps -r /home/circle/devops/requirements_tests.txt
+          name: Install requirements
+          command: pip install -U setuptools pip wheel && pip install --exists-action=s --no-deps -r /home/circleci/devops/requirements_tests.txt
 
       - run:
           name: Test - Flake8
-          command: cd ~/devops && source ~/virtualenvs/tests/bin/activate && flake8
+          command: flake8
+
 #  minikube-testing:
 #    machine: true
 #    environment:
