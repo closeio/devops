@@ -66,7 +66,7 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
     client = redis.Redis(host=host, port=port, db=db)
 
     if match:
-        print('Scanning redis keys with match: %s\n' % match)
+        print(f'Scanning redis keys with match: {match}\n')
     else:
         print('Scanning all redis keys\n')
 
