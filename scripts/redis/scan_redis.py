@@ -29,15 +29,15 @@ def get_size(client, key, key_type):
     """Get size of key."""
 
     size = -1
-    if key_type == 'string':
+    if key_type == b'string':
         size = client.strlen(key)
-    elif key_type == 'zset':
+    elif key_type == b'zset':
         size = client.zcard(key)
-    elif key_type == 'set':
+    elif key_type == b'set':
         size = client.scard(key)
-    elif key_type == 'list':
+    elif key_type == b'list':
         size = client.llen(key)
-    elif key_type == 'hash':
+    elif key_type == b'hash':
         size = client.hlen(key)
 
     return size
@@ -70,7 +70,7 @@ def run(host, port, db, delay, file_name, print_it, match, set_ttl=None):
     print('Scanning redis keys with match: %s\n' % match)
     cursor = '0'
 
-    log_file = file(file_name, 'w')
+    log_file = open(file_name, 'w')
 
     signal.signal(signal.SIGINT, signal_handler)
 
